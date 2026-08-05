@@ -21,23 +21,12 @@ struct LoginView: View {
             VStack(spacing: 24) {
                 Spacer()
                 
-                // GLOWING GREEN GITHUB BADGE
-                ZStack {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(red: 0.1, green: 0.7, blue: 0.3), Color(red: 0.08, green: 0.5, blue: 0.25)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 76, height: 76)
-                        .shadow(color: Color(red: 0.1, green: 0.7, blue: 0.3).opacity(0.4), radius: 16, x: 0, y: 8)
-                    
-                    Image(systemName: "circle.hexagonpath")
-                        .font(.system(size: 40, weight: .bold))
-                        .foregroundColor(.white)
-                }
+                // GLOWING EXPORTED APP LOGO
+                Image("AppLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 80, height: 80)
+                    .shadow(color: Color(red: 0.1, green: 0.7, blue: 0.3).opacity(0.5), radius: 20, x: 0, y: 8)
                 
                 VStack(spacing: 6) {
                     HStack(spacing: 1) {
@@ -129,8 +118,10 @@ struct LoginView: View {
                     
                     Button(action: saveAndContinue) {
                         HStack(spacing: 8) {
-                            Image(systemName: "circle.hexagonpath")
-                                .font(.system(size: 16, weight: .bold))
+                            Image("AppLogo")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 18, height: 18)
                             Text("Connect with GitHub")
                                 .font(.system(size: 15, weight: .bold, design: .rounded))
                         }

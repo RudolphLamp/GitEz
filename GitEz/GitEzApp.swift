@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 @main
 struct GitEzApp: App {
@@ -6,8 +7,27 @@ struct GitEzApp: App {
         WindowGroup {
             ContentView()
                 .background(WindowAccessor())
+                .onAppear {
+                    setDockIcon()
+                }
         }
         .windowStyle(.hiddenTitleBar)
+    }
+    
+    private func setDockIcon() {
+        let iconPaths = [
+            "/Users/zaza/Documents/GitEz/ICONS/Icon-iOS-Dark-1024@1x.png",
+            "/Users/zaza/Documents/icon/Ezgit/Icon Exports/Icon-iOS-Dark-1024@1x.png"
+        ]
+        
+        for path in iconPaths {
+            if FileManager.default.fileExists(atPath: path),
+               let image = NSImage(contentsOfFile: path) {
+                image.size = NSSize(width: 512, height: 512)
+                NSApplication.shared.applicationIconImage = image
+                break
+            }
+        }
     }
 }
 

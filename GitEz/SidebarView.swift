@@ -5,24 +5,13 @@ struct SidebarView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // BRANDING HEADER LOGO WITH SOFT GLOW
-            HStack(spacing: 10) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(red: 0.15, green: 0.8, blue: 0.4), Color(red: 0.08, green: 0.55, blue: 0.28)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 32, height: 32)
-                        .shadow(color: Color(red: 0.2, green: 0.8, blue: 0.4).opacity(0.4), radius: 8, x: 0, y: 3)
-                    
-                    Image(systemName: "circle.hexagonpath")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                }
+            // BRANDING HEADER LOGO WITH ACTUAL EXPORTED APP LOGO
+            HStack(spacing: 12) {
+                Image("AppLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 32, height: 32)
+                    .shadow(color: Color(red: 0.2, green: 0.8, blue: 0.4).opacity(0.4), radius: 8, x: 0, y: 3)
                 
                 HStack(spacing: 1) {
                     Text("Git")
