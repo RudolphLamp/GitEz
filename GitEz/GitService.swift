@@ -16,6 +16,9 @@ public class GitService: ObservableObject {
     @Published public var showTerminalConsole: Bool = false
     @Published public var showHistoryDrawer: Bool = false
     
+    // Auto Open PR Toggle
+    @Published public var autoOpenPROnPush: Bool = true
+    
     // Commit & Push History Log
     @Published public var commitHistory: [CommitLogItem] = []
     
@@ -89,7 +92,7 @@ public class GitService: ObservableObject {
         let (cleanRemote, _) = GitService.sanitizeGitHubRemoteUrl(remoteUrl)
         guard !cleanRemote.isEmpty else { return ["main"] }
         
-        var args = ["ls-remote", "--heads", cleanRemote]
+        let args = ["ls-remote", "--heads", cleanRemote]
         if let p = path, !p.isEmpty {
             let res = runGitCommand(args, inDir: p)
             return parseLsRemoteOutput(res.output)
@@ -436,7 +439,14 @@ public class GitService: ObservableObject {
             completedSteps.insert(.push)
             feedItems.append(FeedCardItem(type: .pushSuccess(branch)))
             loadCommitHistory(inDir: dir)
-            currentStep = .openPR
+            
+            // Check Auto Open PR Toggle
+            if autoOpenPROnPush {
+                currentStep = .openPR
+            } else {
+                completedSteps.insert(.openPR)
+                feedItems.append(FeedCardItem(type: .completedAll))
+            }
         }
     }
     

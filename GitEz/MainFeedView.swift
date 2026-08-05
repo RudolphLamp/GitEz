@@ -30,7 +30,7 @@ struct MainFeedView: View {
                                     .font(.system(size: 13, weight: .bold, design: .rounded))
                                     .foregroundColor(isSelected ? .white : Color.white.opacity(0.6))
                                 
-                                Text(isSelected ? "\(gitService.completedSteps.count)/5" : "0/5")
+                                Text(isSelected ? "\(gitService.completedSteps.count)/\(gitService.autoOpenPROnPush ? 5 : 4)" : "0/\(gitService.autoOpenPROnPush ? 5 : 4)")
                                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                                     .foregroundColor(isSelected ? Color.white.opacity(0.8) : Color.white.opacity(0.4))
                                     .padding(.horizontal, 6)
@@ -52,6 +52,23 @@ struct MainFeedView: View {
                     }
                     
                     Spacer()
+                    
+                    // TOP BAR PR TOGGLE BUTTON
+                    Toggle(isOn: $gitService.autoOpenPROnPush) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "arrow.triangle.pull")
+                                .font(.system(size: 10, weight: .bold))
+                            Text("Auto PR")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                        }
+                        .foregroundColor(gitService.autoOpenPROnPush ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.5))
+                    }
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.04))
+                    .cornerRadius(8)
                     
                     // TERMINAL CONSOLE TOGGLE BUTTON
                     Button(action: {
