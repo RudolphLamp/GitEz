@@ -48,6 +48,32 @@ struct MainFeedView: View {
                 }
                 
                 Spacer()
+                
+                // TERMINAL CONSOLE TOGGLE BUTTON
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        gitService.showTerminalConsole.toggle()
+                    }
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "terminal.fill")
+                            .font(.system(size: 11))
+                        Text("Terminal Console")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                        Text("\(gitService.terminalLogs.count)")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.green.opacity(0.25))
+                            .cornerRadius(4)
+                    }
+                    .foregroundColor(gitService.showTerminalConsole ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.7))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(gitService.showTerminalConsole ? Color(red: 0.1, green: 0.3, blue: 0.18) : Color.white.opacity(0.06))
+                    .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 24)
             .padding(.top, 16)
@@ -137,6 +163,17 @@ struct MainFeedView: View {
                 .padding(.horizontal, 24)
                 .padding(.vertical, 16)
             }
+            
+            // EMBEDDED REAL TERMINAL CONSOLE DRAWER
+            if gitService.showTerminalConsole {
+                VStack(spacing: 0) {
+                    Divider()
+                        .background(Color.white.opacity(0.12))
+                    
+                    renderTerminalConsoleDrawer()
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
         .alert("Create New Branch", isPresented: $showNewBranchAlert) {
             TextField("branch-name", text: $newBranchInput)
@@ -151,6 +188,107 @@ struct MainFeedView: View {
         } message: {
             Text("Enter a name for the new branch to create and checkout.")
         }
+    }
+    
+    // MARK: - Terminal Console Drawer View
+    @ViewBuilder
+    private func renderTerminalConsoleDrawer() -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "terminal.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                    Text("TERMINAL CLI CONSOLE OUTPUT")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.8))
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    let logText = gitService.terminalLogs.map { "[\($0.timestamp.formatted(date: .omitted, time: .standard))] $ \($0.command)\n\($0.output)" }.joined(separator: "\n\n")
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(logText, forType: .string)
+                }) {
+                    Text("Copy All")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.7))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .disabled(gitService.terminalLogs.isEmpty)
+                
+                Button(action: { gitService.clearTerminalLogs() }) {
+                    Text("Clear")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.7))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                
+                Button(action: { gitService.showTerminalConsole = false }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Color.white.opacity(0.5))
+                        .padding(4)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        ForEach(gitService.terminalLogs) { log in
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 8) {
+                                    Text(log.timestamp, style: .time)
+                                        .font(.system(size: 10, design: .monospaced))
+                                        .foregroundColor(Color.white.opacity(0.3))
+                                    
+                                    Text("$ \(log.command)")
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundColor(log.isError ? Color(red: 0.95, green: 0.4, blue: 0.4) : Color(red: 0.4, green: 0.85, blue: 0.5))
+                                }
+                                
+                                if !log.output.isEmpty {
+                                    Text(log.output)
+                                        .font(.system(size: 11, design: .monospaced))
+                                        .foregroundColor(log.isError ? Color(red: 0.95, green: 0.6, blue: 0.6) : Color.white.opacity(0.8))
+                                        .padding(8)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color.black.opacity(0.6))
+                                        .cornerRadius(6)
+                                }
+                            }
+                            .id(log.id)
+                        }
+                    }
+                    .padding(12)
+                }
+                .frame(height: 180)
+                .background(Color.black.opacity(0.5))
+                .cornerRadius(8)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+                .onChange(of: gitService.terminalLogs.count) { _ in
+                    if let last = gitService.terminalLogs.last {
+                        withAnimation {
+                            proxy.scrollTo(last.id, anchor: .bottom)
+                        }
+                    }
+                }
+            }
+        }
+        .background(Color(red: 0.08, green: 0.1, blue: 0.12))
     }
     
     // MARK: - Feed Card Item Renderer
@@ -356,6 +494,49 @@ struct MainFeedView: View {
             .cornerRadius(10)
             .overlay(
                 RoundedRectangle(cornerRadius: 10).stroke(Color(red: 0.2, green: 0.6, blue: 0.3).opacity(0.4), lineWidth: 1)
+            )
+            
+        case .pushError(let errMessage):
+            HStack(alignment: .top, spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Color.red.opacity(0.2))
+                        .frame(width: 24, height: 24)
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.red)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Push Failed")
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 0.95, green: 0.4, blue: 0.4))
+                    
+                    Text(errMessage)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(Color.white.opacity(0.7))
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    gitService.showTerminalConsole = true
+                }) {
+                    Text("Inspect Console")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.red.opacity(0.3))
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(14)
+            .background(Color.red.opacity(0.12))
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10).stroke(Color.red.opacity(0.4), lineWidth: 1)
             )
             
         case .prSuccess(let prUrl):

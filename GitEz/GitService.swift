@@ -12,6 +12,10 @@ public class GitService: ObservableObject {
     @Published public var isExecuting: Bool = false
     @Published public var showSettingsModal: Bool = false
     @Published public var showAddWorkspaceModal: Bool = false
+    @Published public var showTerminalConsole: Bool = false
+    
+    // Terminal Log History
+    @Published public var terminalLogs: [TerminalLogEntry] = []
     
     // Workflow State
     @Published public var currentStep: WorkflowStep = .stage
@@ -78,7 +82,7 @@ public class GitService: ObservableObject {
         
         // Initialize git repo if not already initialized
         let isRepoCheck = runGitCommand(["rev-parse", "--is-inside-work-tree"], inDir: cleanPath)
-        if isRepoCheck.trimmingCharacters(in: .whitespacesAndNewlines) != "true" {
+        if isRepoCheck.output.trimmingCharacters(in: .whitespacesAndNewlines) != "true" {
             _ = runGitCommand(["init"], inDir: cleanPath)
         }
         
@@ -108,8 +112,8 @@ public class GitService: ObservableObject {
     
     // MARK: - Git Configuration Login & PAT Token
     public func fetchGitUser() {
-        let nameOutput = runGitCommand(["config", "--global", "user.name"])
-        let emailOutput = runGitCommand(["config", "--global", "user.email"])
+        let nameOutput = runGitCommand(["config", "--global", "user.name"]).output
+        let emailOutput = runGitCommand(["config", "--global", "user.email"]).output
         let savedToken = UserDefaults.standard.string(forKey: gitTokenKey) ?? ""
         
         let username = nameOutput.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -128,7 +132,6 @@ public class GitService: ObservableObject {
         
         UserDefaults.standard.set(cleanToken, forKey: gitTokenKey)
         
-        // If PAT token is provided, configure git header for private repos
         if !cleanToken.isEmpty {
             let authHeader = "Authorization: token \(cleanToken)"
             _ = runGitCommand(["config", "--global", "http.extraHeader", authHeader])
@@ -151,7 +154,7 @@ public class GitService: ObservableObject {
         }
         
         let res = runGitCommand(["checkout", target], inDir: dir)
-        if res.contains("error:") || res.contains("fatal:") {
+        if res.isError {
             _ = runGitCommand(["checkout", "-b", target], inDir: dir)
         }
         
@@ -178,23 +181,20 @@ public class GitService: ObservableObject {
         }
         
         let isRepoCheck = runGitCommand(["rev-parse", "--is-inside-work-tree"], inDir: dir)
-        var isRepo = isRepoCheck.trimmingCharacters(in: .whitespacesAndNewlines) == "true"
+        var isRepo = isRepoCheck.output.trimmingCharacters(in: .whitespacesAndNewlines) == "true"
         
         if !isRepo {
-            // Auto init if folder exists but git isn't initialized yet
             _ = runGitCommand(["init"], inDir: dir)
             isRepo = true
         }
         
-        let branch = runGitCommand(["branch", "--show-current"], inDir: dir).trimmingCharacters(in: .whitespacesAndNewlines)
-        let remote = runGitCommand(["remote", "get-url", "origin"], inDir: dir).trimmingCharacters(in: .whitespacesAndNewlines)
+        let branch = runGitCommand(["branch", "--show-current"], inDir: dir).output.trimmingCharacters(in: .whitespacesAndNewlines)
+        let remote = runGitCommand(["remote", "get-url", "origin"], inDir: dir).output.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // Real modified and untracked files check
-        let statusRaw = runGitCommand(["status", "--untracked-files=all", "--short"], inDir: dir)
+        let statusRaw = runGitCommand(["status", "--untracked-files=all", "--short"], inDir: dir).output
         let lines = statusRaw.components(separatedBy: .newlines).filter { !$0.isEmpty }
         var modified = lines.map { String($0.dropFirst(3)).trimmingCharacters(in: .whitespaces) }
         
-        // If repo is empty or no modified files detected, check directory files on disk
         if modified.isEmpty {
             if let filesOnDisk = try? FileManager.default.contentsOfDirectory(atPath: dir) {
                 let nonGitFiles = filesOnDisk.filter { !$0.hasPrefix(".") && $0 != "node_modules" }
@@ -204,8 +204,7 @@ public class GitService: ObservableObject {
             }
         }
         
-        // Real branches check (local and remote)
-        let branchRaw = runGitCommand(["branch", "-a"], inDir: dir)
+        let branchRaw = runGitCommand(["branch", "-a"], inDir: dir).output
         var fetchedBranches: [GitBranch] = []
         var seenNames = Set<String>()
         
@@ -243,7 +242,6 @@ public class GitService: ObservableObject {
         self.remoteBranch = finalBranch
         self.selectedFilesToStage = Set(self.activeStatus.modifiedFiles)
         
-        // Update active workspace branch & remoteUrl memory
         if let idx = workspaces.firstIndex(where: { $0.id == ws.id }) {
             workspaces[idx].selectedBranch = finalBranch
             if !finalRemote.isEmpty {
@@ -252,7 +250,6 @@ public class GitService: ObservableObject {
             saveWorkspaces()
         }
         
-        // Feed Items
         self.feedItems = [
             FeedCardItem(type: .info("Workspace opened\n\(dir) on \(finalBranch)")),
             FeedCardItem(type: .filesDetected(modified))
@@ -267,7 +264,6 @@ public class GitService: ObservableObject {
         let dir = ws.path
         let files = Array(selectedFilesToStage)
         
-        // If empty or all files selected, stage all files using `git add .`
         if files.isEmpty || files.count == activeStatus.modifiedFiles.count {
             _ = runGitCommand(["add", "."], inDir: dir)
         } else {
@@ -287,9 +283,8 @@ public class GitService: ObservableObject {
         let dir = ws.path
         let msg = commitMessage.isEmpty ? "Update project changes" : commitMessage
         
-        // Ensure files are staged before committing
         _ = runGitCommand(["add", "."], inDir: dir)
-        let res = runGitCommand(["commit", "-m", msg], inDir: dir)
+        _ = runGitCommand(["commit", "-m", msg], inDir: dir)
         let count = selectedFilesToStage.isEmpty ? max(1, activeStatus.modifiedFiles.count) : selectedFilesToStage.count
         
         completedSteps.insert(.commit)
@@ -305,19 +300,30 @@ public class GitService: ObservableObject {
         isExecuting = true
         feedItems.append(FeedCardItem(type: .pushing(branch)))
         
-        // Configure remote if set
         let targetRemote = activeStatus.remoteUrl.isEmpty ? ws.remoteUrl : activeStatus.remoteUrl
         if !targetRemote.isEmpty {
             _ = runGitCommand(["remote", "remove", "origin"], inDir: dir)
             _ = runGitCommand(["remote", "add", "origin", targetRemote], inDir: dir)
         }
         
-        let pushRes = runGitCommand(["push", "-u", "origin", branch], inDir: dir)
+        // Push attempt 1
+        var pushResult = runGitCommand(["push", "-u", "origin", branch], inDir: dir)
+        
+        // If rejected due to remote initial commit, pull --rebase and retry push!
+        if pushResult.isError || pushResult.output.contains("rejected") || pushResult.output.contains("fetch first") {
+            _ = runGitCommand(["pull", "--rebase", "origin", branch], inDir: dir)
+            pushResult = runGitCommand(["push", "-u", "origin", branch], inDir: dir)
+        }
+        
         isExecuting = false
         
-        completedSteps.insert(.push)
-        feedItems.append(FeedCardItem(type: .pushSuccess(branch)))
-        currentStep = .openPR
+        if pushResult.isError && (pushResult.output.contains("fatal:") || pushResult.output.contains("error:")) {
+            feedItems.append(FeedCardItem(type: .pushError(pushResult.output)))
+        } else {
+            completedSteps.insert(.push)
+            feedItems.append(FeedCardItem(type: .pushSuccess(branch)))
+            currentStep = .openPR
+        }
     }
     
     public func executeOpenPR() {
@@ -341,9 +347,13 @@ public class GitService: ObservableObject {
         }
     }
     
+    public func clearTerminalLogs() {
+        terminalLogs.removeAll()
+    }
+    
     // MARK: - Process Execution Helper
     @discardableResult
-    private func runGitCommand(_ arguments: [String], inDir: String? = nil) -> String {
+    private func runGitCommand(_ arguments: [String], inDir: String? = nil) -> (output: String, isError: Bool) {
         let process = Process()
         let pipe = Pipe()
         
@@ -353,7 +363,6 @@ public class GitService: ObservableObject {
             process.currentDirectoryURL = URL(fileURLWithPath: dir)
         }
         
-        // Attach authorization header for private repos if token is configured
         if !gitUser.token.isEmpty {
             var env = ProcessInfo.processInfo.environment
             env["GIT_TERMINAL_PROMPT"] = "0"
@@ -363,13 +372,24 @@ public class GitService: ObservableObject {
         process.standardOutput = pipe
         process.standardError = pipe
         
+        var outputText = ""
+        var isErr = false
+        
         do {
             try process.run()
             process.waitUntilExit()
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            return String(data: data, encoding: .utf8) ?? ""
+            outputText = String(data: data, encoding: .utf8) ?? ""
+            isErr = process.terminationStatus != 0 || outputText.contains("fatal:") || outputText.contains("error:")
         } catch {
-            return "Execution failed: \(error.localizedDescription)"
+            outputText = "Execution failed: \(error.localizedDescription)"
+            isErr = true
         }
+        
+        let fullCmd = "git " + arguments.joined(separator: " ")
+        let logEntry = TerminalLogEntry(command: fullCmd, output: outputText.trimmingCharacters(in: .whitespacesAndNewlines), isError: isErr)
+        terminalLogs.append(logEntry)
+        
+        return (outputText, isErr)
     }
 }

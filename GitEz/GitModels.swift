@@ -83,6 +83,14 @@ public enum WorkflowStep: Int, CaseIterable, Identifiable {
     }
 }
 
+public struct TerminalLogEntry: Identifiable {
+    public let id = UUID()
+    public let timestamp = Date()
+    public let command: String
+    public let output: String
+    public let isError: Bool
+}
+
 public enum FeedItemType {
     case info(String)
     case filesDetected([String])
@@ -91,6 +99,7 @@ public enum FeedItemType {
     case commitSuccess(String, Int, String)
     case pushing(String)
     case pushSuccess(String)
+    case pushError(String)
     case prSuccess(String)
     case completedAll
 }
