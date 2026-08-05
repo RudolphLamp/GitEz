@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="ICONS/Icon-iOS-ClearDark-1024@1x.png" width="128" height="128" alt="GitEz Logo" />
+<img src="ICONS/Icon-iOS-TintedDark-1024@1x.png" width="140" height="140" alt="GitEz Tinted Dark Logo" />
 
 # GitEz
 
@@ -9,7 +9,7 @@
 [![macOS](https://img.shields.io/badge/platform-macOS%2014.0%2B-emerald.svg?style=flat-square&logo=apple)](https://github.com/RudolphLamp/GitEz)
 [![Swift](https://img.shields.io/badge/swift-5.9-orange.svg?style=flat-square&logo=swift)](https://developer.apple.com/swift/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v1.0.0-green.svg?style=flat-square)](https://github.com/RudolphLamp/GitEz/releases)
+[![Release](https://img.shields.io/badge/release-v1.1.0-green.svg?style=flat-square)](https://github.com/RudolphLamp/GitEz/releases)
 
 ---
 
@@ -36,7 +36,7 @@
 ## 📸 Interface Preview
 
 <div align="center">
-  <img src="screenshots/image.png" width="700" alt="GitEz Interface Preview" />
+  <img src="screenshots/image.png" width="720" alt="GitEz Interface Preview" />
 </div>
 
 ---
@@ -52,7 +52,7 @@
 
 ## 📥 Installation
 
-### Download pre-built DMG Installer
+### Download pre-built DMG Installer (v1.1.0)
 1. Download **`GitEz.dmg`** from the [Releases](https://github.com/RudolphLamp/GitEz/releases) page.
 2. Open `GitEz.dmg`.
 3. Drag **GitEz** into your `Applications` folder.
