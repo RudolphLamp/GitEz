@@ -39,6 +39,22 @@ public class GitService: ObservableObject {
         fetchGitUser()
     }
     
+    // MARK: - GitHub URL Sanitizer Helper
+    public static func sanitizeGitHubRemoteUrl(_ urlString: String) -> (cleanUrl: String, extractedBranch: String?) {
+        var str = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        var branch: String? = nil
+        
+        if let range = str.range(of: "/tree/") {
+            let branchPart = String(str[range.upperBound...])
+            branch = branchPart.components(separatedBy: "/").first
+            str = String(str[..<range.lowerBound])
+        }
+        if !str.hasSuffix(".git") && str.contains("github.com") {
+            str += ".git"
+        }
+        return (str, branch)
+    }
+    
     // MARK: - Workspaces Management
     public func loadSavedWorkspaces() {
         if let data = UserDefaults.standard.data(forKey: savedWorkspacesKey),
@@ -51,7 +67,7 @@ public class GitService: ObservableObject {
             let defaultWs = Workspace(
                 name: name.isEmpty ? "GitEz" : name,
                 path: currentPath,
-                remoteUrl: "https://github.com/COS301-SE-2026/Cybersecurity-Awareness-Training-Platform",
+                remoteUrl: "https://github.com/RudolphLamp/gitez-test.git",
                 selectedBranch: "main"
             )
             self.workspaces = [defaultWs]
@@ -63,30 +79,30 @@ public class GitService: ObservableObject {
     
     public func addWorkspace(path: String, remoteUrl: String) {
         let cleanPath = path.trimmingCharacters(in: .whitespacesAndNewlines)
-        let cleanRemote = remoteUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        let (cleanRemote, extractedBranch) = GitService.sanitizeGitHubRemoteUrl(remoteUrl)
         guard !cleanPath.isEmpty else { return }
         
         let folderName = (cleanPath as NSString).lastPathComponent
         let wsName = folderName.isEmpty ? "workspace" : folderName
+        let targetBranch = extractedBranch ?? "main"
         
         if let idx = workspaces.firstIndex(where: { $0.path == cleanPath }) {
             workspaces[idx].remoteUrl = cleanRemote
+            if let b = extractedBranch { workspaces[idx].selectedBranch = b }
             selectedWorkspaceID = workspaces[idx].id
         } else {
-            let newWs = Workspace(name: wsName, path: cleanPath, remoteUrl: cleanRemote)
+            let newWs = Workspace(name: wsName, path: cleanPath, remoteUrl: cleanRemote, selectedBranch: targetBranch)
             workspaces.append(newWs)
             selectedWorkspaceID = newWs.id
         }
         
         saveWorkspaces()
         
-        // Initialize git repo if not already initialized
         let isRepoCheck = runGitCommand(["rev-parse", "--is-inside-work-tree"], inDir: cleanPath)
         if isRepoCheck.output.trimmingCharacters(in: .whitespacesAndNewlines) != "true" {
             _ = runGitCommand(["init"], inDir: cleanPath)
         }
         
-        // Link remote origin if remoteUrl provided
         if !cleanRemote.isEmpty {
             _ = runGitCommand(["remote", "remove", "origin"], inDir: cleanPath)
             _ = runGitCommand(["remote", "add", "origin", cleanRemote], inDir: cleanPath)
@@ -166,7 +182,7 @@ public class GitService: ObservableObject {
         refreshActiveStatus()
     }
     
-    // MARK: - Active Workspace Git Status
+    // MARK: - Active Workspace Git Status & Real Remote Fetching
     public func refreshActiveStatus() {
         guard let ws = activeWorkspace else {
             self.activeStatus = GitStatusInfo(isRepository: false)
@@ -188,8 +204,18 @@ public class GitService: ObservableObject {
             isRepo = true
         }
         
+        // Ensure remote URL is sanitized
+        let rawRemote = runGitCommand(["remote", "get-url", "origin"], inDir: dir).output.trimmingCharacters(in: .whitespacesAndNewlines)
+        let (cleanRemote, _) = GitService.sanitizeGitHubRemoteUrl(rawRemote.contains("fatal:") ? ws.remoteUrl : rawRemote)
+        
+        if !cleanRemote.isEmpty {
+            _ = runGitCommand(["remote", "set-url", "origin", cleanRemote], inDir: dir)
+        }
+        
+        // FETCH ALL REMOTE BRANCHES FROM GITHUB
+        _ = runGitCommand(["fetch", "--all", "--prune"], inDir: dir)
+        
         let branch = runGitCommand(["branch", "--show-current"], inDir: dir).output.trimmingCharacters(in: .whitespacesAndNewlines)
-        let remote = runGitCommand(["remote", "get-url", "origin"], inDir: dir).output.trimmingCharacters(in: .whitespacesAndNewlines)
         
         let statusRaw = runGitCommand(["status", "--untracked-files=all", "--short"], inDir: dir).output
         let lines = statusRaw.components(separatedBy: .newlines).filter { !$0.isEmpty }
@@ -204,6 +230,7 @@ public class GitService: ObservableObject {
             }
         }
         
+        // Real branches check (local and remote)
         let branchRaw = runGitCommand(["branch", "-a"], inDir: dir).output
         var fetchedBranches: [GitBranch] = []
         var seenNames = Set<String>()
@@ -230,13 +257,12 @@ public class GitService: ObservableObject {
         }
         
         let finalBranch = branch.isEmpty ? (ws.selectedBranch.isEmpty ? "main" : ws.selectedBranch) : branch
-        let finalRemote = remote.contains("fatal:") ? ws.remoteUrl : remote
         
         self.activeStatus = GitStatusInfo(
             isRepository: isRepo,
             currentBranch: finalBranch,
             modifiedFiles: modified,
-            remoteUrl: finalRemote,
+            remoteUrl: cleanRemote,
             availableBranches: fetchedBranches
         )
         self.remoteBranch = finalBranch
@@ -244,8 +270,8 @@ public class GitService: ObservableObject {
         
         if let idx = workspaces.firstIndex(where: { $0.id == ws.id }) {
             workspaces[idx].selectedBranch = finalBranch
-            if !finalRemote.isEmpty {
-                workspaces[idx].remoteUrl = finalRemote
+            if !cleanRemote.isEmpty {
+                workspaces[idx].remoteUrl = cleanRemote
             }
             saveWorkspaces()
         }
@@ -302,14 +328,12 @@ public class GitService: ObservableObject {
         
         let targetRemote = activeStatus.remoteUrl.isEmpty ? ws.remoteUrl : activeStatus.remoteUrl
         if !targetRemote.isEmpty {
-            _ = runGitCommand(["remote", "remove", "origin"], inDir: dir)
-            _ = runGitCommand(["remote", "add", "origin", targetRemote], inDir: dir)
+            let (cleanRemote, _) = GitService.sanitizeGitHubRemoteUrl(targetRemote)
+            _ = runGitCommand(["remote", "set-url", "origin", cleanRemote], inDir: dir)
         }
         
-        // Push attempt 1
         var pushResult = runGitCommand(["push", "-u", "origin", branch], inDir: dir)
         
-        // If rejected due to remote initial commit, pull --rebase and retry push!
         if pushResult.isError || pushResult.output.contains("rejected") || pushResult.output.contains("fetch first") {
             _ = runGitCommand(["pull", "--rebase", "origin", branch], inDir: dir)
             pushResult = runGitCommand(["push", "-u", "origin", branch], inDir: dir)
@@ -326,17 +350,30 @@ public class GitService: ObservableObject {
         }
     }
     
-    public func executeOpenPR() {
+    public func executeOpenPR() async {
+        isExecuting = true
+        
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        
+        isExecuting = false
         completedSteps.insert(.openPR)
         
         let targetRemote = activeStatus.remoteUrl.isEmpty ? activeWorkspace?.remoteUrl ?? "" : activeStatus.remoteUrl
         var prUrlString = "https://github.com"
         
+        let branch = remoteBranch.isEmpty ? activeStatus.currentBranch : remoteBranch
+        
         if !targetRemote.isEmpty && targetRemote.contains("github.com") {
-            let cleanRemote = targetRemote
+            let (cleanRemote, _) = GitService.sanitizeGitHubRemoteUrl(targetRemote)
+            let baseRemote = cleanRemote
                 .replacingOccurrences(of: "git@github.com:", with: "https://github.com/")
                 .replacingOccurrences(of: ".git", with: "")
-            prUrlString = "\(cleanRemote)/pull/new/\(remoteBranch)"
+            
+            if branch == "main" || branch == "master" {
+                prUrlString = baseRemote
+            } else {
+                prUrlString = "\(baseRemote)/compare/main...\(branch)?expand=1"
+            }
         }
         
         feedItems.append(FeedCardItem(type: .prSuccess(prUrlString)))

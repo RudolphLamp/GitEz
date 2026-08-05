@@ -551,7 +551,7 @@ struct MainFeedView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Opened Pull Request")
+                    Text(prUrl.contains("/compare/") ? "Created Branch PR Comparison" : "Pushed to Repository")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                     
@@ -578,7 +578,7 @@ struct MainFeedView: View {
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
                 
-                Text("Your PR is live on GitHub.")
+                Text("Your code is pushed and live on GitHub.")
                     .font(.system(size: 13, design: .rounded))
                     .foregroundColor(Color.white.opacity(0.6))
             }
@@ -745,10 +745,19 @@ struct MainFeedView: View {
                     }
                     
                 case .openPR:
-                    Button(action: { gitService.executeOpenPR() }) {
+                    Button(action: {
+                        Task {
+                            await gitService.executeOpenPR()
+                        }
+                    }) {
                         HStack(spacing: 10) {
-                            Image(systemName: "arrow.triangle.pull")
-                            Text("Open Pull Request on GitHub 🚀")
+                            if gitService.isExecuting {
+                                ProgressView().controlSize(.small)
+                                Text("Preparing Pull Request on GitHub...")
+                            } else {
+                                Image(systemName: "arrow.triangle.pull")
+                                Text(gitService.remoteBranch == "main" ? "View Code on GitHub 🚀" : "Open Pull Request on GitHub 🚀")
+                            }
                         }
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
