@@ -165,20 +165,18 @@ struct SidebarView: View {
             
             // QUICK TOOLBAR ITEMS
             VStack(spacing: 4) {
-                // COMMIT HISTORY DRAWER TOGGLE BUTTON
+                // COMMIT HISTORY POP-UP MODAL BUTTON
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        gitService.showHistoryDrawer.toggle()
-                    }
+                    gitService.showHistoryModal = true
                 }) {
                     HStack(spacing: 10) {
                         Image(systemName: "clock.arrow.circlepath")
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(gitService.showHistoryDrawer ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.6))
+                            .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
                         
                         Text("GitHub Commit History")
                             .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundColor(gitService.showHistoryDrawer ? .white : Color.white.opacity(0.8))
+                            .foregroundColor(.white)
                         
                         Spacer()
                         
@@ -192,7 +190,7 @@ struct SidebarView: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
-                    .background(gitService.showHistoryDrawer ? Color(red: 0.1, green: 0.3, blue: 0.18).opacity(0.4) : Color.white.opacity(0.04))
+                    .background(Color.white.opacity(0.04))
                     .cornerRadius(10)
                 }
                 .buttonStyle(.plain)

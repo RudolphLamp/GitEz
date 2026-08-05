@@ -12,6 +12,7 @@ public class GitService: ObservableObject {
     @Published public var isExecuting: Bool = false
     @Published public var showSettingsModal: Bool = false
     @Published public var showAddWorkspaceModal: Bool = false
+    @Published public var showHistoryModal: Bool = false
     @Published public var showTerminalConsole: Bool = false
     @Published public var showHistoryDrawer: Bool = false
     
@@ -61,6 +62,25 @@ public class GitService: ObservableObject {
             try process.run()
         } catch {
             print("Failed to open IDE: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Open Commit on GitHub
+    public func openCommitOnGitHub(_ commitHash: String) {
+        guard let ws = activeWorkspace else { return }
+        let targetRemote = activeStatus.remoteUrl.isEmpty ? ws.remoteUrl : activeStatus.remoteUrl
+        
+        var commitUrlString = "https://github.com"
+        if !targetRemote.isEmpty && targetRemote.contains("github.com") {
+            let (cleanRemote, _) = GitService.sanitizeGitHubRemoteUrl(targetRemote)
+            let baseRemote = cleanRemote
+                .replacingOccurrences(of: "git@github.com:", with: "https://github.com/")
+                .replacingOccurrences(of: ".git", with: "")
+            commitUrlString = "\(baseRemote)/commit/\(commitHash)"
+        }
+        
+        if let url = URL(string: commitUrlString) {
+            NSWorkspace.shared.open(url)
         }
     }
     
@@ -333,7 +353,7 @@ public class GitService: ObservableObject {
     }
     
     private func loadCommitHistory(inDir: String) {
-        let logRaw = runGitCommand(["log", "-n", "20", "--pretty=format:%H|%h|%s|%an|%cr"], inDir: inDir).output
+        let logRaw = runGitCommand(["log", "-n", "25", "--pretty=format:%H|%h|%s|%an|%cr"], inDir: inDir).output
         var items: [CommitLogItem] = []
         
         for line in logRaw.components(separatedBy: .newlines) {

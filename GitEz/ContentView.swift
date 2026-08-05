@@ -46,6 +46,12 @@ struct ContentView: View {
                 AddWorkspaceModalView()
                     .transition(.opacity.combined(with: .scale(scale: 0.95)))
             }
+            
+            // COMMIT HISTORY POP-UP MODAL OVERLAY
+            if gitService.showHistoryModal {
+                CommitHistoryModalView()
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            }
         }
         .environmentObject(gitService)
         .frame(minWidth: 1080, minHeight: 720)
