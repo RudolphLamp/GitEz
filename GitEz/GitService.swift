@@ -134,7 +134,7 @@ public class GitService: ObservableObject {
         return (str, branch)
     }
     
-    // MARK: - Workspaces Management (Empty Initial State Support)
+    // MARK: - Workspaces Management
     public func loadSavedWorkspaces() {
         if let data = UserDefaults.standard.data(forKey: savedWorkspacesKey),
            let decoded = try? JSONDecoder().decode([Workspace].self, from: data) {
@@ -287,16 +287,16 @@ public class GitService: ObservableObject {
         
         let branch = runGitCommand(["branch", "--show-current"], inDir: dir).output.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        let statusRaw = runGitCommand(["status", "--untracked-files=all", "--short"], inDir: dir).output
+        let statusRaw = runGitCommand(["status", "--short"], inDir: dir).output
         let lines = statusRaw.components(separatedBy: .newlines).filter { !$0.isEmpty }
-        var modified = lines.map { String($0.dropFirst(3)).trimmingCharacters(in: .whitespaces) }
+        var modified: [String] = []
         
-        if modified.isEmpty {
-            if let filesOnDisk = try? FileManager.default.contentsOfDirectory(atPath: dir) {
-                let nonGitFiles = filesOnDisk.filter { !$0.hasPrefix(".") && $0 != "node_modules" }
-                if !nonGitFiles.isEmpty {
-                    modified = nonGitFiles
-                }
+        for line in lines {
+            let cleanLine = line.trimmingCharacters(in: .whitespaces)
+            guard !cleanLine.isEmpty else { continue }
+            let file = String(cleanLine.dropFirst(2)).trimmingCharacters(in: .whitespaces)
+            if !file.isEmpty && !file.hasPrefix(".DS_Store") && !file.hasPrefix(".git/") {
+                modified.append(file)
             }
         }
         
@@ -357,6 +357,12 @@ public class GitService: ObservableObject {
     
     private func loadCommitHistory(inDir: String) {
         let logRaw = runGitCommand(["log", "-n", "25", "--pretty=format:%H|%h|%s|%an|%cr"], inDir: inDir).output
+        
+        if logRaw.contains("fatal:") || logRaw.contains("does not have any commits") {
+            self.commitHistory = []
+            return
+        }
+        
         var items: [CommitLogItem] = []
         
         for line in logRaw.components(separatedBy: .newlines) {
@@ -440,7 +446,6 @@ public class GitService: ObservableObject {
             feedItems.append(FeedCardItem(type: .pushSuccess(branch)))
             loadCommitHistory(inDir: dir)
             
-            // Check Auto Open PR Toggle
             if autoOpenPROnPush {
                 currentStep = .openPR
             } else {
