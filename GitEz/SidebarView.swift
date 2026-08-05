@@ -5,18 +5,18 @@ struct SidebarView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // BRANDING HEADER LOGO WITH ACTUAL EXPORTED APP LOGO
+            // BRANDING HEADER LOGO WITH TINTED DARK LOGO & CRIMSON HIGHLIGHT
             HStack(spacing: 12) {
                 Image("AppLogo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 32, height: 32)
-                    .shadow(color: Color(red: 0.2, green: 0.8, blue: 0.4).opacity(0.4), radius: 8, x: 0, y: 3)
+                    .shadow(color: Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.4), radius: 8, x: 0, y: 3)
                 
                 HStack(spacing: 1) {
                     Text("Git")
                         .font(.system(size: 20, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                        .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                     Text("Ez")
                         .font(.system(size: 20, weight: .heavy, design: .rounded))
                         .foregroundColor(.white)
@@ -77,7 +77,7 @@ struct SidebarView: View {
                                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                                             .fill(
                                                 isSelected ?
-                                                LinearGradient(colors: [Color(red: 0.15, green: 0.75, blue: 0.35), Color(red: 0.1, green: 0.55, blue: 0.25)], startPoint: .topLeading, endPoint: .bottomTrailing) :
+                                                LinearGradient(colors: [Color(red: 0.85, green: 0.25, blue: 0.22), Color(red: 0.6, green: 0.15, blue: 0.14)], startPoint: .topLeading, endPoint: .bottomTrailing) :
                                                 LinearGradient(colors: [Color.white.opacity(0.08), Color.white.opacity(0.04)], startPoint: .topLeading, endPoint: .bottomTrailing)
                                             )
                                             .frame(width: 34, height: 34)
@@ -94,14 +94,14 @@ struct SidebarView: View {
                                         
                                         Text(ws.selectedBranch.isEmpty ? "main" : ws.selectedBranch)
                                             .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                            .foregroundColor(isSelected ? Color(red: 0.45, green: 0.9, blue: 0.6) : Color.white.opacity(0.4))
+                                            .foregroundColor(isSelected ? Color(red: 0.95, green: 0.5, blue: 0.45) : Color.white.opacity(0.4))
                                     }
                                     
                                     Spacer()
                                     
                                     if isSelected {
                                         Circle()
-                                            .fill(Color(red: 0.35, green: 0.85, blue: 0.5))
+                                            .fill(Color(red: 0.91, green: 0.29, blue: 0.25))
                                             .frame(width: 6, height: 6)
                                     }
                                 }
@@ -113,7 +113,7 @@ struct SidebarView: View {
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(isSelected ? Color(red: 0.3, green: 0.8, blue: 0.4).opacity(0.4) : Color.clear, lineWidth: 1)
+                                        .stroke(isSelected ? Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.4) : Color.clear, lineWidth: 1)
                                 )
                             }
                             .buttonStyle(.plain)
@@ -136,14 +136,14 @@ struct SidebarView: View {
                                 .font(.system(size: 13, weight: .bold, design: .rounded))
                             Spacer()
                         }
-                        .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                        .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
-                        .background(Color(red: 0.1, green: 0.3, blue: 0.18).opacity(0.3))
+                        .background(Color(red: 0.35, green: 0.1, blue: 0.08).opacity(0.3))
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(Color(red: 0.2, green: 0.6, blue: 0.3).opacity(0.3), lineWidth: 1)
+                                .stroke(Color(red: 0.7, green: 0.2, blue: 0.18).opacity(0.3), lineWidth: 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -161,7 +161,7 @@ struct SidebarView: View {
                     HStack(spacing: 10) {
                         Image(systemName: "clock.arrow.circlepath")
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                            .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                         
                         Text("GitHub Commit History")
                             .font(.system(size: 12, weight: .bold, design: .rounded))

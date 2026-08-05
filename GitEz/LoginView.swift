@@ -10,29 +10,28 @@ struct LoginView: View {
     
     var body: some View {
         ZStack {
-            // Dark Liquid Glass Backdrop
             VisualEffectView(material: .underWindowBackground, blendingMode: .behindWindow)
                 .ignoresSafeArea()
             
-            Color(red: 0.05, green: 0.07, blue: 0.09)
-                .opacity(0.85)
+            Color(red: 0.08, green: 0.05, blue: 0.06)
+                .opacity(0.88)
                 .ignoresSafeArea()
             
             VStack(spacing: 24) {
                 Spacer()
                 
-                // GLOWING EXPORTED APP LOGO
+                // GLOWING TINTED DARK CRIMSON LOGO
                 Image("AppLogo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 80, height: 80)
-                    .shadow(color: Color(red: 0.1, green: 0.7, blue: 0.3).opacity(0.5), radius: 20, x: 0, y: 8)
+                    .frame(width: 90, height: 90)
+                    .shadow(color: Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.5), radius: 24, x: 0, y: 8)
                 
                 VStack(spacing: 6) {
                     HStack(spacing: 1) {
                         Text("Git")
                             .font(.system(size: 28, weight: .heavy, design: .rounded))
-                            .foregroundColor(Color(red: 0.2, green: 0.8, blue: 0.4))
+                            .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                         Text("Ez")
                             .font(.system(size: 28, weight: .heavy, design: .rounded))
                             .foregroundColor(.white)
@@ -130,13 +129,13 @@ struct LoginView: View {
                         .padding(.vertical, 14)
                         .background(
                             LinearGradient(
-                                colors: [Color(red: 0.1, green: 0.65, blue: 0.3), Color(red: 0.08, green: 0.5, blue: 0.22)],
+                                colors: [Color(red: 0.85, green: 0.25, blue: 0.22), Color(red: 0.6, green: 0.15, blue: 0.14)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .shadow(color: Color(red: 0.1, green: 0.65, blue: 0.3).opacity(0.35), radius: 8, x: 0, y: 4)
+                        .shadow(color: Color(red: 0.85, green: 0.25, blue: 0.22).opacity(0.4), radius: 8, x: 0, y: 4)
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 4)

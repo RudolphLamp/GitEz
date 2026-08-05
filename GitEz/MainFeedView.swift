@@ -70,7 +70,7 @@ struct MainFeedView: View {
                 }) {
                     HStack(spacing: 8) {
                         Circle()
-                            .fill(isSelected ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.3))
+                            .fill(isSelected ? Color(red: 0.91, green: 0.29, blue: 0.25) : Color.white.opacity(0.3))
                             .frame(width: 8, height: 8)
                         
                         Text(ws.name)
@@ -79,7 +79,7 @@ struct MainFeedView: View {
                         
                         Text(isSelected ? "\(gitService.completedSteps.count)/\(gitService.autoOpenPROnPush ? 5 : 4)" : "0/\(gitService.autoOpenPROnPush ? 5 : 4)")
                             .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundColor(isSelected ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.4))
+                            .foregroundColor(isSelected ? Color(red: 0.91, green: 0.29, blue: 0.25) : Color.white.opacity(0.4))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
                             .background(Color.white.opacity(0.08))
@@ -92,7 +92,7 @@ struct MainFeedView: View {
                     )
                     .clipShape(Capsule())
                     .overlay(
-                        Capsule().stroke(isSelected ? Color(red: 0.35, green: 0.85, blue: 0.5).opacity(0.3) : Color.clear, lineWidth: 1)
+                        Capsule().stroke(isSelected ? Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.4) : Color.clear, lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -108,7 +108,7 @@ struct MainFeedView: View {
                     Text("Auto PR")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                 }
-                .foregroundColor(gitService.autoOpenPROnPush ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.5))
+                .foregroundColor(gitService.autoOpenPROnPush ? Color(red: 0.91, green: 0.29, blue: 0.25) : Color.white.opacity(0.5))
             }
             .toggleStyle(.switch)
             .controlSize(.small)
@@ -132,13 +132,13 @@ struct MainFeedView: View {
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.green.opacity(0.25))
+                        .background(Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.3))
                         .cornerRadius(6)
                 }
-                .foregroundColor(gitService.showTerminalConsole ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.7))
+                .foregroundColor(gitService.showTerminalConsole ? Color(red: 0.91, green: 0.29, blue: 0.25) : Color.white.opacity(0.7))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(gitService.showTerminalConsole ? Color(red: 0.1, green: 0.3, blue: 0.18) : Color.white.opacity(0.06))
+                .background(gitService.showTerminalConsole ? Color(red: 0.35, green: 0.1, blue: 0.08) : Color.white.opacity(0.06))
                 .cornerRadius(12)
             }
             .buttonStyle(.plain)
@@ -189,10 +189,10 @@ struct MainFeedView: View {
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 9))
                         }
-                        .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                        .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color(red: 0.15, green: 0.75, blue: 0.35).opacity(0.2))
+                        .background(Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.2))
                         .cornerRadius(12)
                     }
                     .menuStyle(.borderlessButton)
@@ -243,7 +243,7 @@ struct MainFeedView: View {
         .background(
             ZStack {
                 VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
-                Color(red: 0.08, green: 0.1, blue: 0.13).opacity(0.85)
+                Color(red: 0.1, green: 0.07, blue: 0.08).opacity(0.88)
             }
         )
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -276,11 +276,11 @@ struct MainFeedView: View {
                         ZStack {
                             Circle()
                                 .fill(
-                                    isCompleted ? Color(red: 0.15, green: 0.75, blue: 0.35) :
-                                    (isCurrent ? Color(red: 0.1, green: 0.55, blue: 0.25) : Color.white.opacity(0.08))
+                                    isCompleted ? Color(red: 0.85, green: 0.25, blue: 0.22) :
+                                    (isCurrent ? Color(red: 0.65, green: 0.18, blue: 0.16) : Color.white.opacity(0.08))
                                 )
                                 .frame(width: 36, height: 36)
-                                .shadow(color: isCurrent ? Color(red: 0.35, green: 0.85, blue: 0.5).opacity(0.4) : Color.clear, radius: 8, x: 0, y: 2)
+                                .shadow(color: isCurrent ? Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.4) : Color.clear, radius: 8, x: 0, y: 2)
                             
                             if isCompleted {
                                 Image(systemName: "checkmark")
@@ -299,7 +299,7 @@ struct MainFeedView: View {
                     if stepNumber < totalSteps {
                         Rectangle()
                             .fill(
-                                stepNumber < gitService.currentStep.rawValue ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.1)
+                                stepNumber < gitService.currentStep.rawValue ? Color(red: 0.91, green: 0.29, blue: 0.25) : Color.white.opacity(0.1)
                             )
                             .frame(height: 2)
                             .frame(maxWidth: .infinity)
@@ -317,7 +317,7 @@ struct MainFeedView: View {
                 HStack {
                     Text("STEP 1 OF \(gitService.autoOpenPROnPush ? 5 : 4)")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                        .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                         .tracking(1)
                     
                     Spacer()
@@ -336,7 +336,7 @@ struct MainFeedView: View {
                 VStack(spacing: 12) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 32))
-                        .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                        .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                     Text("Working tree clean!")
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
@@ -361,7 +361,7 @@ struct MainFeedView: View {
                             HStack {
                                 Image(systemName: isChecked ? "checkmark.circle.fill" : "circle")
                                     .font(.system(size: 18))
-                                    .foregroundColor(isChecked ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.3))
+                                    .foregroundColor(isChecked ? Color(red: 0.91, green: 0.29, blue: 0.25) : Color.white.opacity(0.3))
                                 
                                 Text(file)
                                     .font(.system(size: 13, design: .monospaced))
@@ -371,10 +371,10 @@ struct MainFeedView: View {
                                 
                                 Text("MODIFIED")
                                     .font(.system(size: 10, weight: .bold, design: .rounded))
-                                    .foregroundColor(Color.yellow)
+                                    .foregroundColor(Color(red: 0.95, green: 0.5, blue: 0.45))
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 3)
-                                    .background(Color.yellow.opacity(0.15))
+                                    .background(Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.15))
                                     .cornerRadius(6)
                             }
                             .padding(14)
@@ -398,10 +398,10 @@ struct MainFeedView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(
-                    LinearGradient(colors: [Color(red: 0.12, green: 0.65, blue: 0.3), Color(red: 0.08, green: 0.5, blue: 0.22)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    LinearGradient(colors: [Color(red: 0.85, green: 0.25, blue: 0.22), Color(red: 0.6, green: 0.15, blue: 0.14)], startPoint: .topLeading, endPoint: .bottomTrailing)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .shadow(color: Color(red: 0.12, green: 0.65, blue: 0.3).opacity(0.35), radius: 8, x: 0, y: 4)
+                .shadow(color: Color(red: 0.85, green: 0.25, blue: 0.22).opacity(0.35), radius: 8, x: 0, y: 4)
             }
             .buttonStyle(.plain)
             .padding(.top, 8)
@@ -415,7 +415,7 @@ struct MainFeedView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("STEP 2 OF \(gitService.autoOpenPROnPush ? 5 : 4)")
                     .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                    .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                     .tracking(1)
                 
                 Text("Describe your changes")
@@ -448,7 +448,7 @@ struct MainFeedView: View {
                 
                 Button("fix: update UI") { gitService.commitMessage = "fix: update UI styling and layouts" }
                     .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                    .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color.white.opacity(0.06))
@@ -457,7 +457,7 @@ struct MainFeedView: View {
                 
                 Button("feat: add workflow") { gitService.commitMessage = "feat: add workflow step execution" }
                     .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                    .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color.white.opacity(0.06))
@@ -488,10 +488,10 @@ struct MainFeedView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
-                        LinearGradient(colors: [Color(red: 0.12, green: 0.65, blue: 0.3), Color(red: 0.08, green: 0.5, blue: 0.22)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        LinearGradient(colors: [Color(red: 0.85, green: 0.25, blue: 0.22), Color(red: 0.6, green: 0.15, blue: 0.14)], startPoint: .topLeading, endPoint: .bottomTrailing)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .shadow(color: Color(red: 0.12, green: 0.65, blue: 0.3).opacity(0.35), radius: 8, x: 0, y: 4)
+                    .shadow(color: Color(red: 0.85, green: 0.25, blue: 0.22).opacity(0.35), radius: 8, x: 0, y: 4)
                 }
                 .buttonStyle(.plain)
             }
@@ -506,7 +506,7 @@ struct MainFeedView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("STEP 3 OF \(gitService.autoOpenPROnPush ? 5 : 4)")
                     .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                    .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                     .tracking(1)
                 
                 Text("Push commits to GitHub")
@@ -563,10 +563,10 @@ struct MainFeedView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
-                        LinearGradient(colors: [Color(red: 0.12, green: 0.65, blue: 0.3), Color(red: 0.08, green: 0.5, blue: 0.22)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        LinearGradient(colors: [Color(red: 0.85, green: 0.25, blue: 0.22), Color(red: 0.6, green: 0.15, blue: 0.14)], startPoint: .topLeading, endPoint: .bottomTrailing)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .shadow(color: Color(red: 0.12, green: 0.65, blue: 0.3).opacity(0.35), radius: 8, x: 0, y: 4)
+                    .shadow(color: Color(red: 0.85, green: 0.25, blue: 0.22).opacity(0.35), radius: 8, x: 0, y: 4)
                 }
                 .buttonStyle(.plain)
             }
@@ -580,11 +580,11 @@ struct MainFeedView: View {
         VStack(spacing: 20) {
             ZStack {
                 Circle()
-                    .fill(Color(red: 0.15, green: 0.75, blue: 0.35).opacity(0.2))
+                    .fill(Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.2))
                     .frame(width: 64, height: 64)
                 Image(systemName: "checkmark")
                     .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                    .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
             }
             
             VStack(spacing: 6) {
@@ -630,10 +630,10 @@ struct MainFeedView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
-                        LinearGradient(colors: [Color(red: 0.12, green: 0.65, blue: 0.3), Color(red: 0.08, green: 0.5, blue: 0.22)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        LinearGradient(colors: [Color(red: 0.85, green: 0.25, blue: 0.22), Color(red: 0.6, green: 0.15, blue: 0.14)], startPoint: .topLeading, endPoint: .bottomTrailing)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .shadow(color: Color(red: 0.12, green: 0.65, blue: 0.3).opacity(0.35), radius: 8, x: 0, y: 4)
+                    .shadow(color: Color(red: 0.85, green: 0.25, blue: 0.22).opacity(0.35), radius: 8, x: 0, y: 4)
                 }
                 .buttonStyle(.plain)
             }
@@ -651,13 +651,13 @@ struct MainFeedView: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [Color(red: 0.15, green: 0.8, blue: 0.4), Color(red: 0.08, green: 0.55, blue: 0.28)],
+                            colors: [Color(red: 0.85, green: 0.25, blue: 0.22), Color(red: 0.6, green: 0.15, blue: 0.14)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .frame(width: 88, height: 88)
-                    .shadow(color: Color(red: 0.2, green: 0.8, blue: 0.4).opacity(0.4), radius: 20, x: 0, y: 10)
+                    .shadow(color: Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.4), radius: 20, x: 0, y: 10)
                 
                 Image(systemName: "folder.badge.plus")
                     .font(.system(size: 40, weight: .medium))
@@ -689,13 +689,13 @@ struct MainFeedView: View {
                     .padding(.vertical, 14)
                     .background(
                         LinearGradient(
-                            colors: [Color(red: 0.12, green: 0.65, blue: 0.3), Color(red: 0.08, green: 0.5, blue: 0.22)],
+                            colors: [Color(red: 0.85, green: 0.25, blue: 0.22), Color(red: 0.6, green: 0.15, blue: 0.14)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(color: Color(red: 0.12, green: 0.65, blue: 0.3).opacity(0.4), radius: 12, x: 0, y: 6)
+                    .shadow(color: Color(red: 0.85, green: 0.25, blue: 0.22).opacity(0.4), radius: 12, x: 0, y: 6)
                 }
                 .buttonStyle(.plain)
             }
@@ -714,7 +714,7 @@ struct MainFeedView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "terminal.fill")
                         .font(.system(size: 12))
-                        .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                        .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                     Text("TERMINAL CLI CONSOLE OUTPUT")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundColor(Color.white.opacity(0.8))
@@ -772,7 +772,7 @@ struct MainFeedView: View {
                                     
                                     Text("$ \(log.command)")
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                        .foregroundColor(log.isError ? Color(red: 0.95, green: 0.4, blue: 0.4) : Color(red: 0.4, green: 0.85, blue: 0.5))
+                                        .foregroundColor(log.isError ? Color(red: 0.95, green: 0.4, blue: 0.4) : Color(red: 0.91, green: 0.35, blue: 0.3))
                                 }
                                 
                                 if !log.output.isEmpty {

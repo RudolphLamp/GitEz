@@ -19,7 +19,7 @@ struct CommitHistoryModalView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "clock.arrow.circlepath")
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                            .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                         
                         Text("GitHub Commit & Push History")
                             .font(.system(size: 20, weight: .bold, design: .rounded))
@@ -30,10 +30,10 @@ struct CommitHistoryModalView: View {
                     
                     Text("\(gitService.commitHistory.count) Commits")
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                        .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color(red: 0.15, green: 0.75, blue: 0.35).opacity(0.2))
+                        .background(Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.15))
                         .cornerRadius(6)
                     
                     Button(action: { gitService.showHistoryModal = false }) {
@@ -76,10 +76,10 @@ struct CommitHistoryModalView: View {
                                     HStack(alignment: .top, spacing: 12) {
                                         Text(item.shortHash)
                                             .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                            .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                                            .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                                             .padding(.horizontal, 8)
                                             .padding(.vertical, 4)
-                                            .background(Color(red: 0.15, green: 0.75, blue: 0.35).opacity(0.2))
+                                            .background(Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.15))
                                             .cornerRadius(6)
                                         
                                         VStack(alignment: .leading, spacing: 4) {
@@ -110,7 +110,7 @@ struct CommitHistoryModalView: View {
                                             Image(systemName: "arrow.up.forward")
                                                 .font(.system(size: 9, weight: .bold))
                                         }
-                                        .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                                        .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 4)
                                         .background(Color.white.opacity(0.06))
@@ -147,7 +147,7 @@ struct CommitHistoryModalView: View {
             .background(
                 ZStack {
                     VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
-                    Color(red: 0.08, green: 0.1, blue: 0.13).opacity(0.92)
+                    Color(red: 0.1, green: 0.07, blue: 0.08).opacity(0.92)
                 }
             )
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))

@@ -16,8 +16,8 @@ struct GitEzApp: App {
     
     private func setDockIcon() {
         let iconPaths = [
-            "/Users/zaza/Documents/GitEz/ICONS/Icon-iOS-Dark-1024@1x.png",
-            "/Users/zaza/Documents/icon/Ezgit/Icon Exports/Icon-iOS-Dark-1024@1x.png"
+            "/Users/zaza/Documents/GitEz/ICONS/Icon-iOS-TintedDark-1024@1x.png",
+            "/Users/zaza/Documents/icon/Ezgit/Icon Exports/Icon-iOS-TintedDark-1024@1x.png"
         ]
         
         for path in iconPaths {
