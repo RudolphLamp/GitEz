@@ -8,6 +8,36 @@ public enum AppTheme: String, CaseIterable, Identifiable {
     public var id: String { self.rawValue }
 }
 
+public enum IDEApp: String, CaseIterable, Identifiable {
+    case vscode = "VS Code"
+    case cursor = "Cursor"
+    case antigravity = "Antigravity"
+    case terminal = "Terminal"
+    case finder = "Finder"
+
+    public var id: String { rawValue }
+
+    public var iconName: String {
+        switch self {
+        case .vscode: return "chevron.left.forwardslash.chevron.right"
+        case .cursor: return "sparkles"
+        case .antigravity: return "atom"
+        case .terminal: return "terminal.fill"
+        case .finder: return "folder.fill"
+        }
+    }
+
+    public var appName: String {
+        switch self {
+        case .vscode: return "Visual Studio Code"
+        case .cursor: return "Cursor"
+        case .antigravity: return "Antigravity"
+        case .terminal: return "Terminal"
+        case .finder: return "Finder"
+        }
+    }
+}
+
 public struct Workspace: Identifiable, Hashable, Codable {
     public var id: UUID
     public var name: String
@@ -41,6 +71,15 @@ public struct GitUser: Equatable {
         !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         email.contains("@")
     }
+}
+
+public struct CommitLogItem: Identifiable, Hashable {
+    public var id: String { hash }
+    public let hash: String
+    public let shortHash: String
+    public let message: String
+    public let author: String
+    public let dateString: String
 }
 
 public enum WorkflowStep: Int, CaseIterable, Identifiable {

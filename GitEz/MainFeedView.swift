@@ -8,171 +8,179 @@ struct MainFeedView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // WORKSPACE PILL TABS TOP BAR
-            HStack(spacing: 12) {
-                ForEach(gitService.workspaces) { ws in
-                    let isSelected = gitService.selectedWorkspaceID == ws.id
+            if gitService.workspaces.isEmpty || gitService.activeWorkspace == nil {
+                // EMPTY WORKSPACE WELCOME HERO SCREEN
+                renderEmptyWorkspaceHero()
+            } else {
+                // WORKSPACE PILL TABS TOP BAR
+                HStack(spacing: 12) {
+                    ForEach(gitService.workspaces) { ws in
+                        let isSelected = gitService.selectedWorkspaceID == ws.id
+                        
+                        Button(action: {
+                            gitService.selectedWorkspaceID = ws.id
+                            gitService.refreshActiveStatus()
+                        }) {
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(isSelected ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.3))
+                                    .frame(width: 8, height: 8)
+                                
+                                Text(ws.name)
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundColor(isSelected ? .white : Color.white.opacity(0.6))
+                                
+                                Text(isSelected ? "\(gitService.completedSteps.count)/5" : "0/5")
+                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                    .foregroundColor(isSelected ? Color.white.opacity(0.8) : Color.white.opacity(0.4))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.white.opacity(0.1))
+                                    .cornerRadius(4)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(
+                                isSelected ? Color.white.opacity(0.12) : Color.white.opacity(0.04)
+                            )
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule().stroke(isSelected ? Color.white.opacity(0.2) : Color.clear, lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
                     
+                    Spacer()
+                    
+                    // TERMINAL CONSOLE TOGGLE BUTTON
                     Button(action: {
-                        gitService.selectedWorkspaceID = ws.id
-                        gitService.refreshActiveStatus()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            gitService.showTerminalConsole.toggle()
+                        }
                     }) {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(isSelected ? Color(red: 0.2, green: 0.8, blue: 0.4) : Color.white.opacity(0.3))
-                                .frame(width: 8, height: 8)
-                            
-                            Text(ws.name)
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
-                                .foregroundColor(isSelected ? .white : Color.white.opacity(0.6))
-                            
-                            Text(isSelected ? "\(gitService.completedSteps.count)/5" : "0/5")
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                .foregroundColor(isSelected ? Color.white.opacity(0.8) : Color.white.opacity(0.4))
+                        HStack(spacing: 6) {
+                            Image(systemName: "terminal.fill")
+                                .font(.system(size: 11))
+                            Text("Terminal Console")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                            Text("\(gitService.terminalLogs.count)")
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Color.white.opacity(0.1))
+                                .background(Color.green.opacity(0.25))
                                 .cornerRadius(4)
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            isSelected ? Color.white.opacity(0.12) : Color.white.opacity(0.04)
-                        )
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule().stroke(isSelected ? Color.white.opacity(0.2) : Color.clear, lineWidth: 1)
-                        )
+                        .foregroundColor(gitService.showTerminalConsole ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.7))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(gitService.showTerminalConsole ? Color(red: 0.1, green: 0.3, blue: 0.18) : Color.white.opacity(0.06))
+                        .cornerRadius(8)
                     }
                     .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
+                .background(VisualEffectView(material: .headerView, blendingMode: .withinWindow))
                 
-                Spacer()
+                Divider()
+                    .background(Color.white.opacity(0.08))
                 
-                // TERMINAL CONSOLE TOGGLE BUTTON
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        gitService.showTerminalConsole.toggle()
-                    }
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "terminal.fill")
-                            .font(.system(size: 11))
-                        Text("Terminal Console")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                        Text("\(gitService.terminalLogs.count)")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.green.opacity(0.25))
-                            .cornerRadius(4)
-                    }
-                    .foregroundColor(gitService.showTerminalConsole ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color.white.opacity(0.7))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(gitService.showTerminalConsole ? Color(red: 0.1, green: 0.3, blue: 0.18) : Color.white.opacity(0.06))
-                    .cornerRadius(8)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-            .padding(.bottom, 12)
-            .background(VisualEffectView(material: .headerView, blendingMode: .withinWindow))
-            
-            Divider()
-                .background(Color.white.opacity(0.08))
-            
-            // ACTIVE WORKSPACE TITLE HEADER BAR WITH REAL BRANCH SELECTOR
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 12) {
-                        Text(gitService.activeWorkspace?.name ?? "GitEz")
-                            .font(.system(size: 18, weight: .heavy, design: .rounded))
-                            .foregroundColor(.white)
-                        
-                        // REAL GIT BRANCH SELECTOR MENU
-                        Menu {
-                            Section("Local & Remote Branches") {
-                                ForEach(gitService.activeStatus.availableBranches) { b in
-                                    Button(action: {
-                                        gitService.checkoutBranch(b.name)
-                                    }) {
-                                        HStack {
-                                            if b.name == gitService.activeStatus.currentBranch {
-                                                Image(systemName: "checkmark")
+                // ACTIVE WORKSPACE TITLE HEADER BAR WITH REAL BRANCH SELECTOR
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 12) {
+                            Text(gitService.activeWorkspace?.name ?? "GitEz")
+                                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+                            
+                            // REAL GIT BRANCH SELECTOR MENU
+                            Menu {
+                                Section("Local & Remote Branches") {
+                                    ForEach(gitService.activeStatus.availableBranches) { b in
+                                        Button(action: {
+                                            gitService.checkoutBranch(b.name)
+                                        }) {
+                                            HStack {
+                                                if b.name == gitService.activeStatus.currentBranch {
+                                                    Image(systemName: "checkmark")
+                                                }
+                                                Text(b.name)
                                             }
-                                            Text(b.name)
                                         }
                                     }
                                 }
+                                
+                                Divider()
+                                
+                                Button(action: { showNewBranchAlert = true }) {
+                                    Label("Create New Branch...", systemImage: "plus")
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "arrow.triangle.pull")
+                                        .font(.system(size: 10, weight: .bold))
+                                    Text(gitService.activeStatus.currentBranch)
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 9))
+                                }
+                                .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Color(red: 0.15, green: 0.75, blue: 0.35).opacity(0.2))
+                                .cornerRadius(6)
                             }
-                            
-                            Divider()
-                            
-                            Button(action: { showNewBranchAlert = true }) {
-                                Label("Create New Branch...", systemImage: "plus")
-                            }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "arrow.triangle.pull")
-                                    .font(.system(size: 10, weight: .bold))
-                                Text(gitService.activeStatus.currentBranch)
-                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                Image(systemName: "chevron.down")
-                                    .font(.system(size: 9))
-                            }
-                            .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(Color(red: 0.15, green: 0.75, blue: 0.35).opacity(0.2))
-                            .cornerRadius(6)
+                            .menuStyle(.borderlessButton)
                         }
-                        .menuStyle(.borderlessButton)
+                        
+                        Text(gitService.activeWorkspace?.path ?? "~/Projects")
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundColor(Color.white.opacity(0.4))
                     }
                     
-                    Text(gitService.activeWorkspace?.path ?? "~/Projects")
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundColor(Color.white.opacity(0.4))
-                }
-                
-                Spacer()
-                
-                Text("@\(gitService.gitUser.username.isEmpty ? "rudolph" : gitService.gitUser.username)")
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                    .foregroundColor(Color.white.opacity(0.6))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Color.white.opacity(0.06))
-                    .cornerRadius(6)
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 14)
-            
-            // FEED CARDS SCROLL VIEW
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Feed Item Log Cards
-                    ForEach(gitService.feedItems) { item in
-                        renderFeedCard(item)
-                    }
+                    Spacer()
                     
-                    // ACTIVE INTERACTIVE STEP CARD
-                    renderActiveStepCard()
+                    Text("@\(gitService.gitUser.username.isEmpty ? "rudolph" : gitService.gitUser.username)")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.white.opacity(0.06))
+                        .cornerRadius(6)
                 }
                 .padding(.horizontal, 24)
-                .padding(.vertical, 16)
-            }
-            
-            // EMBEDDED REAL TERMINAL CONSOLE DRAWER
-            if gitService.showTerminalConsole {
-                VStack(spacing: 0) {
-                    Divider()
-                        .background(Color.white.opacity(0.12))
-                    
-                    renderTerminalConsoleDrawer()
+                .padding(.vertical, 14)
+                
+                // COMMIT HISTORY DRAWER OVERLAY
+                if gitService.showHistoryDrawer {
+                    renderCommitHistoryDrawer()
                 }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                
+                // FEED CARDS SCROLL VIEW
+                ScrollView {
+                    VStack(spacing: 16) {
+                        ForEach(gitService.feedItems) { item in
+                            renderFeedCard(item)
+                        }
+                        
+                        renderActiveStepCard()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                }
+                
+                // EMBEDDED REAL TERMINAL CONSOLE DRAWER
+                if gitService.showTerminalConsole {
+                    VStack(spacing: 0) {
+                        Divider()
+                            .background(Color.white.opacity(0.12))
+                        
+                        renderTerminalConsoleDrawer()
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
         }
         .alert("Create New Branch", isPresented: $showNewBranchAlert) {
@@ -188,6 +196,158 @@ struct MainFeedView: View {
         } message: {
             Text("Enter a name for the new branch to create and checkout.")
         }
+    }
+    
+    // MARK: - Empty Workspace Hero Screen
+    @ViewBuilder
+    private func renderEmptyWorkspaceHero() -> some View {
+        VStack(spacing: 24) {
+            Spacer()
+            
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 0.15, green: 0.8, blue: 0.4), Color(red: 0.08, green: 0.55, blue: 0.28)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 88, height: 88)
+                    .shadow(color: Color(red: 0.2, green: 0.8, blue: 0.4).opacity(0.4), radius: 20, x: 0, y: 10)
+                
+                Image(systemName: "folder.badge.plus")
+                    .font(.system(size: 40, weight: .medium))
+                    .foregroundColor(.white)
+            }
+            
+            VStack(spacing: 8) {
+                Text("Welcome to GitEz")
+                    .font(.system(size: 26, weight: .heavy, design: .rounded))
+                    .foregroundColor(.white)
+                
+                Text("Effortless GitHub commits and step-by-step workflow")
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.6))
+            }
+            
+            VStack(spacing: 12) {
+                Button(action: {
+                    gitService.showAddWorkspaceModal = true
+                }) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 18))
+                        Text("Add Your First Workspace")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 14)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red: 0.12, green: 0.65, blue: 0.3), Color(red: 0.08, green: 0.5, blue: 0.22)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .shadow(color: Color(red: 0.12, green: 0.65, blue: 0.3).opacity(0.4), radius: 12, x: 0, y: 6)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 8)
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    // MARK: - GitHub Commit & Push History Drawer Panel
+    @ViewBuilder
+    private func renderCommitHistoryDrawer() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                    
+                    Text("GITHUB COMMIT & PUSH HISTORY")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                }
+                
+                Spacer()
+                
+                Button(action: { gitService.showHistoryDrawer = false }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color.white.opacity(0.5))
+                        .padding(4)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 14)
+            
+            if gitService.commitHistory.isEmpty {
+                Text("No commits recorded yet in this workspace.")
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.4))
+                    .padding(18)
+            } else {
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach(gitService.commitHistory) { item in
+                            HStack(alignment: .top, spacing: 12) {
+                                Text(item.shortHash)
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundColor(Color(red: 0.35, green: 0.85, blue: 0.5))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(Color(red: 0.15, green: 0.75, blue: 0.35).opacity(0.2))
+                                    .cornerRadius(6)
+                                
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(item.message)
+                                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                        .foregroundColor(.white)
+                                    
+                                    HStack(spacing: 6) {
+                                        Text(item.author)
+                                            .font(.system(size: 11, design: .monospaced))
+                                            .foregroundColor(Color.white.opacity(0.5))
+                                        
+                                        Text("·")
+                                            .foregroundColor(Color.white.opacity(0.3))
+                                        
+                                        Text(item.dateString)
+                                            .font(.system(size: 11, design: .rounded))
+                                            .foregroundColor(Color.white.opacity(0.4))
+                                    }
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(12)
+                            .background(Color.white.opacity(0.04))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.06), lineWidth: 1)
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 14)
+                }
+                .frame(maxHeight: 220)
+            }
+            
+            Divider()
+                .background(Color.white.opacity(0.1))
+        }
+        .background(Color(red: 0.07, green: 0.09, blue: 0.12))
     }
     
     // MARK: - Terminal Console Drawer View
@@ -597,7 +757,6 @@ struct MainFeedView: View {
     private func renderActiveStepCard() -> some View {
         if !gitService.completedSteps.contains(.openPR) {
             VStack(alignment: .leading, spacing: 18) {
-                // STEP HEADER TAG
                 HStack {
                     Text("STEP \(gitService.currentStep.rawValue) · \(gitService.currentStep.title.uppercased())")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
