@@ -110,9 +110,9 @@ struct SidebarView: View {
                                 .background(
                                     isSelected ? Color.white.opacity(0.08) : Color.clear
                                 )
-                                .cornerRadius(12)
+                                .cornerRadius(14)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
+                                    RoundedRectangle(cornerRadius: 14)
                                         .stroke(isSelected ? Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.4) : Color.clear, lineWidth: 1)
                                 )
                             }
@@ -140,9 +140,9 @@ struct SidebarView: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
                         .background(Color(red: 0.35, green: 0.1, blue: 0.08).opacity(0.3))
-                        .cornerRadius(12)
+                        .cornerRadius(14)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
                                 .stroke(Color(red: 0.7, green: 0.2, blue: 0.18).opacity(0.3), lineWidth: 1)
                         )
                     }
@@ -175,12 +175,12 @@ struct SidebarView: View {
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(Color.white.opacity(0.08))
-                            .cornerRadius(4)
+                            .cornerRadius(6)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
                     .background(Color.white.opacity(0.04))
-                    .cornerRadius(10)
+                    .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
             }
@@ -227,10 +227,20 @@ struct SidebarView: View {
                 .buttonStyle(.plain)
             }
             .padding(16)
-            .background(VisualEffectView(material: .sidebar, blendingMode: .withinWindow))
         }
         .frame(width: 250)
-        .background(VisualEffectView(material: .sidebar, blendingMode: .withinWindow))
+        .background(
+            ZStack {
+                VisualEffectView(material: .sidebar, blendingMode: .withinWindow)
+                Color(red: 0.08, green: 0.05, blue: 0.06).opacity(0.92)
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.3), radius: 16, x: 0, y: 8)
     }
 }
 

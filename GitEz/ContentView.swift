@@ -10,29 +10,36 @@ struct ContentView: View {
             VisualEffectView(material: .underWindowBackground, blendingMode: .behindWindow)
                 .ignoresSafeArea()
             
-            Color(red: 0.05, green: 0.07, blue: 0.09)
+            Color(red: 0.05, green: 0.04, blue: 0.05)
                 .opacity(0.92)
                 .ignoresSafeArea()
             
             if !gitService.gitUser.isValid {
                 LoginView()
             } else {
-                HStack(spacing: 0) {
-                    // LEFT WORKSPACE SIDEBAR
+                HStack(spacing: 12) {
+                    // LEFT WORKSPACE SIDEBAR (FLOATING GLASS CARD)
                     SidebarView()
                     
-                    Divider()
-                        .background(Color.white.opacity(0.08))
-                    
-                    // MIDDLE MAIN INTERACTIVE FEED
+                    // MIDDLE MAIN INTERACTIVE FEED (FLOATING GLASS CARD)
                     MainFeedView()
+                        .background(
+                            ZStack {
+                                VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
+                                Color(red: 0.07, green: 0.05, blue: 0.06).opacity(0.85)
+                            }
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
+                        .shadow(color: Color.black.opacity(0.3), radius: 16, x: 0, y: 8)
                     
-                    Divider()
-                        .background(Color.white.opacity(0.08))
-                    
-                    // RIGHT WORKFLOW STATUS PANEL
+                    // RIGHT WORKFLOW STATUS PANEL (FLOATING GLASS CARD)
                     RightWorkflowSidebarView()
                 }
+                .padding(12)
             }
             
             // SETTINGS MODAL OVERLAY
@@ -54,11 +61,11 @@ struct ContentView: View {
             }
         }
         .environmentObject(gitService)
-        .frame(minWidth: 1080, minHeight: 720)
+        .frame(minWidth: 1100, minHeight: 740)
     }
 }
 
 #Preview {
     ContentView()
-        .frame(width: 1100, height: 750)
+        .frame(width: 1120, height: 760)
 }
