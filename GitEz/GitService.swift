@@ -15,9 +15,27 @@ public class GitService: ObservableObject {
     @Published public var showHistoryModal: Bool = false
     @Published public var showTerminalConsole: Bool = false
     @Published public var showHistoryDrawer: Bool = false
+
+    // Section navigation & diff viewer
+    @Published public var currentSection: AppSection = .workspace
+    @Published public var fileDiff: String = ""
+    @Published public var showDiffViewer: Bool = false
+
+    private var pollingTimer: Timer?
     
     // Auto Open PR Toggle
     @Published public var autoOpenPROnPush: Bool = true
+    
+    // Track only new changes toggle & baselines map
+    @Published public var onlyChangesFromNow: Bool = true
+    private var workspaceBaselines: [UUID: Date] = [:]
+    
+    public func resetBaselineForCurrentWorkspace() {
+        if let ws = activeWorkspace {
+            workspaceBaselines[ws.id] = Date()
+            refreshActiveStatus()
+        }
+    }
     
     // Commit & Push History Log
     @Published public var commitHistory: [CommitLogItem] = []
@@ -45,6 +63,7 @@ public class GitService: ObservableObject {
     public init() {
         loadSavedWorkspaces()
         fetchGitUser()
+        startPolling()
     }
     
     // MARK: - IDE Launcher Helper
@@ -146,18 +165,31 @@ public class GitService: ObservableObject {
         }
         refreshActiveStatus()
     }
-    
-    public func addWorkspace(path: String, remoteUrl: String, targetBranch: String = "main") {
+        // MARK: - Add Workspace (Folder / Worktree / Repo)
+    public func addWorkspace(path: String, remoteUrl: String = "", targetBranch: String = "main") {
         let cleanPath = path.trimmingCharacters(in: .whitespacesAndNewlines)
         let (cleanRemote, extractedBranch) = GitService.sanitizeGitHubRemoteUrl(remoteUrl)
         guard !cleanPath.isEmpty else { return }
         
         let folderName = (cleanPath as NSString).lastPathComponent
         let wsName = folderName.isEmpty ? "workspace" : folderName
-        let finalBranch = extractedBranch ?? (targetBranch.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "main" : targetBranch.trimmingCharacters(in: .whitespacesAndNewlines))
+        
+        // Detect current branch of worktree if it already exists
+        let currentBranchCheck = runGitCommand(["branch", "--show-current"], inDir: cleanPath, silent: true).output.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let finalBranch: String
+        if !currentBranchCheck.isEmpty {
+            finalBranch = currentBranchCheck
+        } else if let ext = extractedBranch {
+            finalBranch = ext
+        } else if !targetBranch.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            finalBranch = targetBranch.trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+            finalBranch = "main"
+        }
         
         if let idx = workspaces.firstIndex(where: { $0.path == cleanPath }) {
-            workspaces[idx].remoteUrl = cleanRemote
+            if !cleanRemote.isEmpty { workspaces[idx].remoteUrl = cleanRemote }
             workspaces[idx].selectedBranch = finalBranch
             selectedWorkspaceID = workspaces[idx].id
         } else {
@@ -168,16 +200,30 @@ public class GitService: ObservableObject {
         
         saveWorkspaces()
         
-        let isRepoCheck = runGitCommand(["rev-parse", "--is-inside-work-tree"], inDir: cleanPath)
-        if isRepoCheck.output.trimmingCharacters(in: .whitespacesAndNewlines) != "true" {
-            _ = runGitCommand(["init"], inDir: cleanPath)
+        // Safely check repository/worktree status
+        let isRepoCheck = runGitCommand(["rev-parse", "--is-inside-work-tree"], inDir: cleanPath, silent: true)
+        let isGitDirCheck = runGitCommand(["rev-parse", "--git-dir"], inDir: cleanPath, silent: true)
+        
+        let isRepo = isRepoCheck.output.trimmingCharacters(in: .whitespacesAndNewlines) == "true" ||
+                     !isGitDirCheck.output.contains("fatal:")
+        
+        if !isRepo {
+            _ = runGitCommand(["init"], inDir: cleanPath, silent: true)
         }
         
+        // Safely handle remote without destructive remove
         if !cleanRemote.isEmpty {
-            _ = runGitCommand(["remote", "remove", "origin"], inDir: cleanPath)
-            _ = runGitCommand(["remote", "add", "origin", cleanRemote], inDir: cleanPath)
+            let existingRemote = runGitCommand(["remote", "get-url", "origin"], inDir: cleanPath, silent: true).output.trimmingCharacters(in: .whitespacesAndNewlines)
+            let isRemoteErr = existingRemote.contains("fatal:") || existingRemote.contains("error:") || existingRemote.contains("No such remote") || existingRemote.isEmpty
+            if isRemoteErr {
+                _ = runGitCommand(["remote", "add", "origin", cleanRemote], inDir: cleanPath, silent: true)
+            } else if existingRemote != cleanRemote {
+                _ = runGitCommand(["remote", "set-url", "origin", cleanRemote], inDir: cleanPath, silent: true)
+            }
+            _ = runGitCommand(["fetch", "origin"], inDir: cleanPath, silent: true)
         }
         
+        // Checkout branch only if needed
         checkoutBranch(finalBranch)
         refreshActiveStatus()
     }
@@ -199,8 +245,8 @@ public class GitService: ObservableObject {
     
     // MARK: - Git Configuration Login & PAT Token
     public func fetchGitUser() {
-        let nameOutput = runGitCommand(["config", "--global", "user.name"]).output
-        let emailOutput = runGitCommand(["config", "--global", "user.email"]).output
+        let nameOutput = runGitCommand(["config", "--global", "user.name"], silent: true).output
+        let emailOutput = runGitCommand(["config", "--global", "user.email"], silent: true).output
         let savedToken = UserDefaults.standard.string(forKey: gitTokenKey) ?? ""
         
         let username = nameOutput.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -233,16 +279,31 @@ public class GitService: ObservableObject {
         guard let ws = activeWorkspace else { return }
         let dir = ws.path
         
-        var target = branchName
+        var target = branchName.trimmingCharacters(in: .whitespacesAndNewlines)
         if target.hasPrefix("remotes/origin/") {
             target = String(target.dropFirst("remotes/origin/".count))
         } else if target.hasPrefix("origin/") {
             target = String(target.dropFirst("origin/".count))
         }
+        guard !target.isEmpty else { return }
         
-        let res = runGitCommand(["checkout", target], inDir: dir)
-        if res.isError {
-            _ = runGitCommand(["checkout", "-b", target], inDir: dir)
+        // Check current branch first - IF ALREADY ON TARGET BRANCH, DO NOTHING!
+        let currentBranch = runGitCommand(["branch", "--show-current"], inDir: dir, silent: true).output.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if currentBranch != target {
+            // Check if local branch exists
+            let checkLocal = runGitCommand(["rev-parse", "--verify", target], inDir: dir, silent: true)
+            if !checkLocal.isError && !checkLocal.output.contains("fatal:") {
+                _ = runGitCommand(["checkout", target], inDir: dir)
+            } else {
+                // Check if remote branch exists
+                let checkRemote = runGitCommand(["rev-parse", "--verify", "origin/\(target)"], inDir: dir, silent: true)
+                if !checkRemote.isError && !checkRemote.output.contains("fatal:") {
+                    _ = runGitCommand(["checkout", "-b", target, "origin/\(target)"], inDir: dir)
+                } else {
+                    _ = runGitCommand(["checkout", "-b", target], inDir: dir)
+                }
+            }
         }
         
         if let idx = workspaces.firstIndex(where: { $0.id == ws.id }) {
@@ -269,38 +330,82 @@ public class GitService: ObservableObject {
             return
         }
         
-        let isRepoCheck = runGitCommand(["rev-parse", "--is-inside-work-tree"], inDir: dir)
-        var isRepo = isRepoCheck.output.trimmingCharacters(in: .whitespacesAndNewlines) == "true"
+        let isRepoCheck = runGitCommand(["rev-parse", "--is-inside-work-tree"], inDir: dir, silent: true)
+        let isGitDirCheck = runGitCommand(["rev-parse", "--git-dir"], inDir: dir, silent: true)
+        var isRepo = isRepoCheck.output.trimmingCharacters(in: .whitespacesAndNewlines) == "true" ||
+                     !isGitDirCheck.output.contains("fatal:")
         
         if !isRepo {
-            _ = runGitCommand(["init"], inDir: dir)
+            _ = runGitCommand(["init"], inDir: dir, silent: true)
             isRepo = true
         }
         
-        let rawRemote = runGitCommand(["remote", "get-url", "origin"], inDir: dir).output.trimmingCharacters(in: .whitespacesAndNewlines)
-        let (cleanRemote, _) = GitService.sanitizeGitHubRemoteUrl(rawRemote.contains("fatal:") ? ws.remoteUrl : rawRemote)
+        let rawRemote = runGitCommand(["remote", "get-url", "origin"], inDir: dir, silent: true).output.trimmingCharacters(in: .whitespacesAndNewlines)
+        let isRemoteErr = rawRemote.contains("fatal:") || rawRemote.contains("error:") || rawRemote.contains("No such remote") || rawRemote.isEmpty
+        let validRemoteSrc = isRemoteErr ? ws.remoteUrl : rawRemote
+        let (cleanRemote, _) = GitService.sanitizeGitHubRemoteUrl(validRemoteSrc.contains("error:") || validRemoteSrc.contains("fatal:") ? "" : validRemoteSrc)
         
         if !cleanRemote.isEmpty {
-            _ = runGitCommand(["remote", "set-url", "origin", cleanRemote], inDir: dir)
-            _ = runGitCommand(["fetch", "--all", "--prune"], inDir: dir)
+            if isRemoteErr {
+                _ = runGitCommand(["remote", "add", "origin", cleanRemote], inDir: dir, silent: true)
+            }
+            _ = runGitCommand(["fetch", "origin"], inDir: dir, silent: true)
         }
         
-        let branch = runGitCommand(["branch", "--show-current"], inDir: dir).output.trimmingCharacters(in: .whitespacesAndNewlines)
+        let branch = runGitCommand(["branch", "--show-current"], inDir: dir, silent: true).output.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        let statusRaw = runGitCommand(["status", "--short"], inDir: dir).output
+        // Use --porcelain -uall to get exact file-level status and prevent listing top-level untracked directories
+        let statusRaw = runGitCommand(["status", "--porcelain", "-uall"], inDir: dir, silent: true).output
         let lines = statusRaw.components(separatedBy: .newlines).filter { !$0.isEmpty }
         var modified: [String] = []
         
+        let baseline = self.workspaceBaselines[ws.id] ?? {
+            let now = Date()
+            self.workspaceBaselines[ws.id] = now
+            return now
+        }()
+        
+        let fm = FileManager.default
+        
         for line in lines {
-            let cleanLine = line.trimmingCharacters(in: .whitespaces)
-            guard !cleanLine.isEmpty else { continue }
-            let file = String(cleanLine.dropFirst(2)).trimmingCharacters(in: .whitespaces)
-            if !file.isEmpty && !file.hasPrefix(".DS_Store") && !file.hasPrefix(".git/") {
-                modified.append(file)
+            guard line.count >= 3 else { continue }
+            let statusCode = line.prefix(2)
+            var rawFile = String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+            
+            // Strip surrounding double quotes if present (git quotes paths containing spaces)
+            if rawFile.hasPrefix("\"") && rawFile.hasSuffix("\"") && rawFile.count >= 2 {
+                rawFile = String(rawFile.dropFirst().dropLast())
+            }
+            
+            // Clean escaped characters
+            rawFile = rawFile.replacingOccurrences(of: "\\\"", with: "\"")
+                .replacingOccurrences(of: "\\\\", with: "\\")
+            
+            if !rawFile.isEmpty &&
+                !rawFile.hasPrefix(".DS_Store") &&
+                !rawFile.hasPrefix(".git/") &&
+                !rawFile.contains(".DS_Store") {
+                if !rawFile.hasSuffix("/") {
+                    if self.onlyChangesFromNow {
+                        let fullPath = (dir as NSString).appendingPathComponent(rawFile)
+                        if let attrs = try? fm.attributesOfItem(atPath: fullPath),
+                           let modDate = attrs[.modificationDate] as? Date {
+                            // Only include files modified AFTER baseline date (-1.0s clock tolerance)
+                            if modDate > baseline.addingTimeInterval(-1.0) {
+                                modified.append(rawFile)
+                            }
+                        } else if statusCode.contains("D") {
+                            // Deleted file
+                            modified.append(rawFile)
+                        }
+                    } else {
+                        modified.append(rawFile)
+                    }
+                }
             }
         }
         
-        let branchRaw = runGitCommand(["branch", "-a"], inDir: dir).output
+        let branchRaw = runGitCommand(["branch", "-a"], inDir: dir, silent: true).output
         var fetchedBranches: [GitBranch] = []
         var seenNames = Set<String>()
         
@@ -347,12 +452,12 @@ public class GitService: ObservableObject {
         
         loadCommitHistory(inDir: dir)
         
-        self.feedItems = [
-            FeedCardItem(type: .info("Workspace opened\n\(dir) on \(finalBranch)")),
-            FeedCardItem(type: .filesDetected(modified))
-        ]
-        self.currentStep = .stage
-        self.completedSteps = []
+        if self.feedItems.isEmpty {
+            self.feedItems = [
+                FeedCardItem(type: .info("Workspace opened\n\(dir) on \(finalBranch)")),
+                FeedCardItem(type: .filesDetected(modified))
+            ]
+        }
     }
     
     private func loadCommitHistory(inDir: String) {
@@ -382,10 +487,33 @@ public class GitService: ObservableObject {
     }
     
     // MARK: - Workflow Execution Steps
+    private func checkForConflictMarkers(inDir: String) -> [String] {
+        let diffCheck = runGitCommand(["diff", "--check"], inDir: inDir, silent: true)
+        if diffCheck.output.contains("leftover conflict marker") {
+            var filesWithConflicts: [String] = []
+            for line in diffCheck.output.components(separatedBy: .newlines) {
+                if line.contains("leftover conflict marker") {
+                    let parts = line.components(separatedBy: ":")
+                    if let filename = parts.first?.trimmingCharacters(in: .whitespaces), !filename.isEmpty {
+                        filesWithConflicts.append(filename)
+                    }
+                }
+            }
+            return Array(Set(filesWithConflicts))
+        }
+        return []
+    }
+
     public func executeStageFiles() {
         guard let ws = activeWorkspace else { return }
         let dir = ws.path
         let files = Array(selectedFilesToStage)
+        
+        let conflicts = checkForConflictMarkers(inDir: dir)
+        if !conflicts.isEmpty {
+            feedItems.append(FeedCardItem(type: .pushError("Cannot stage: Conflict markers detected in \(conflicts.joined(separator: ", "))")))
+            return
+        }
         
         if files.isEmpty || files.count == activeStatus.modifiedFiles.count {
             _ = runGitCommand(["add", "."], inDir: dir)
@@ -406,8 +534,20 @@ public class GitService: ObservableObject {
         let dir = ws.path
         let msg = commitMessage.isEmpty ? "Update project changes" : commitMessage
         
+        let conflicts = checkForConflictMarkers(inDir: dir)
+        if !conflicts.isEmpty {
+            feedItems.append(FeedCardItem(type: .pushError("Cannot commit: Conflict markers (<<<<<<< HEAD) detected in \(conflicts.joined(separator: ", "))")))
+            return
+        }
+        
         _ = runGitCommand(["add", "."], inDir: dir)
-        _ = runGitCommand(["commit", "-m", msg], inDir: dir)
+        let commitRes = runGitCommand(["commit", "-m", msg], inDir: dir)
+        
+        if commitRes.isError && (commitRes.output.contains("error:") || commitRes.output.contains("fatal:")) {
+            feedItems.append(FeedCardItem(type: .pushError(commitRes.output)))
+            return
+        }
+        
         let count = selectedFilesToStage.isEmpty ? max(1, activeStatus.modifiedFiles.count) : selectedFilesToStage.count
         
         completedSteps.insert(.commit)
@@ -424,22 +564,24 @@ public class GitService: ObservableObject {
         isExecuting = true
         feedItems.append(FeedCardItem(type: .pushing(branch)))
         
-        let targetRemote = activeStatus.remoteUrl.isEmpty ? ws.remoteUrl : activeStatus.remoteUrl
-        if !targetRemote.isEmpty {
-            let (cleanRemote, _) = GitService.sanitizeGitHubRemoteUrl(targetRemote)
-            _ = runGitCommand(["remote", "set-url", "origin", cleanRemote], inDir: dir)
+        let rawTarget = activeStatus.remoteUrl.isEmpty ? ws.remoteUrl : activeStatus.remoteUrl
+        let isInvalid = rawTarget.contains("error:") || rawTarget.contains("fatal:") || rawTarget.isEmpty
+        let validRemote = isInvalid ? ws.remoteUrl : rawTarget
+        
+        if !validRemote.isEmpty && !validRemote.contains("error:") && !validRemote.contains("fatal:") {
+            let (cleanRemote, _) = GitService.sanitizeGitHubRemoteUrl(validRemote)
+            let existingRemote = runGitCommand(["remote", "get-url", "origin"], inDir: dir, silent: true).output.trimmingCharacters(in: .whitespacesAndNewlines)
+            if existingRemote.contains("fatal:") || existingRemote.contains("error:") || existingRemote.isEmpty {
+                _ = runGitCommand(["remote", "add", "origin", cleanRemote], inDir: dir)
+            } else if existingRemote != cleanRemote {
+                _ = runGitCommand(["remote", "set-url", "origin", cleanRemote], inDir: dir)
+            }
         }
         
-        var pushResult = runGitCommand(["push", "-u", "origin", branch], inDir: dir)
-        
-        if pushResult.isError || pushResult.output.contains("rejected") || pushResult.output.contains("fetch first") {
-            _ = runGitCommand(["pull", "--rebase", "origin", branch], inDir: dir)
-            pushResult = runGitCommand(["push", "-u", "origin", branch], inDir: dir)
-        }
-        
+        let pushResult = runGitCommand(["push", "-u", "origin", branch], inDir: dir)
         isExecuting = false
         
-        if pushResult.isError && (pushResult.output.contains("fatal:") || pushResult.output.contains("error:")) {
+        if pushResult.isError || pushResult.output.contains("rejected") || pushResult.output.contains("fatal:") || pushResult.output.contains("error:") {
             feedItems.append(FeedCardItem(type: .pushError(pushResult.output)))
         } else {
             completedSteps.insert(.push)
@@ -486,13 +628,37 @@ public class GitService: ObservableObject {
         }
     }
     
+    // MARK: - Diff Fetching
+    public func fetchDiff() {
+        guard let ws = activeWorkspace else { fileDiff = ""; return }
+        let result = runGitCommand(["diff", "HEAD"], inDir: ws.path, silent: true)
+        self.fileDiff = result.isError ? "" : result.output
+    }
+
+    // MARK: - Background Polling (5-second auto-refresh)
+    public func startPolling() {
+        pollingTimer?.invalidate()
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+                self.refreshActiveStatus()
+                if self.showDiffViewer { self.fetchDiff() }
+            }
+        }
+    }
+
+    public func stopPolling() {
+        pollingTimer?.invalidate()
+        pollingTimer = nil
+    }
+
     public func clearTerminalLogs() {
         terminalLogs.removeAll()
     }
     
     // MARK: - Process Execution Helper
     @discardableResult
-    private func runGitCommand(_ arguments: [String], inDir: String? = nil) -> (output: String, isError: Bool) {
+    private func runGitCommand(_ arguments: [String], inDir: String? = nil, silent: Bool = false) -> (output: String, isError: Bool) {
         let process = Process()
         let pipe = Pipe()
         
@@ -528,6 +694,9 @@ public class GitService: ObservableObject {
         let fullCmd = "git " + arguments.joined(separator: " ")
         let logEntry = TerminalLogEntry(command: fullCmd, output: outputText.trimmingCharacters(in: .whitespacesAndNewlines), isError: isErr)
         terminalLogs.append(logEntry)
+        if terminalLogs.count > 120 {
+            terminalLogs.removeFirst(terminalLogs.count - 120)
+        }
         
         return (outputText, isErr)
     }

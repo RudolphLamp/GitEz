@@ -25,14 +25,15 @@ struct LoginView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 90, height: 90)
+                    .cornerRadius(18)
                     .shadow(color: Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.5), radius: 24, x: 0, y: 8)
                 
                 VStack(spacing: 6) {
                     HStack(spacing: 1) {
-                        Text("Git")
+                        Text("Z")
                             .font(.system(size: 28, weight: .heavy, design: .rounded))
                             .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
-                        Text("Ez")
+                        Text("Git")
                             .font(.system(size: 28, weight: .heavy, design: .rounded))
                             .foregroundColor(.white)
                     }
