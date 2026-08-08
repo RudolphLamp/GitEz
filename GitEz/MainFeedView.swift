@@ -291,6 +291,27 @@ struct MainFeedView: View {
             }
             .menuStyle(.borderlessButton).fixedSize()
 
+            // GitHub Remote Button
+            Button(action: {
+                let urlStr = gitService.activeStatus.remoteUrl.isEmpty ? (gitService.activeWorkspace?.remoteUrl ?? "") : gitService.activeStatus.remoteUrl
+                if !urlStr.isEmpty, let url = URL(string: urlStr.replacingOccurrences(of: "git@github.com:", with: "https://github.com/").replacingOccurrences(of: ".git", with: "")) {
+                    NSWorkspace.shared.open(url)
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "safari").font(.system(size: 10))
+                    Text("GitHub").font(.system(size: 11, weight: .medium))
+                }
+                .foregroundColor(t.textSecondary)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(Color.white.opacity(0.06))
+                .cornerRadius(6)
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(t.border, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .help("Open remote repository on GitHub")
+
             // Diff toggle
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.2)) {

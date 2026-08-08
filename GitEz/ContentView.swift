@@ -34,11 +34,14 @@ struct ContentView: View {
                         .fill(t.divider)
                         .frame(width: 1)
 
-                    // Main content — workspace or settings
+                    // Main content — workspace, insights, or settings
                     Group {
-                        if gitService.currentSection == .settings {
+                        switch gitService.currentSection {
+                        case .settings:
                             SettingsPageView()
-                        } else {
+                        case .insights:
+                            RepoInsightsView()
+                        case .workspace:
                             MainFeedView()
                         }
                     }

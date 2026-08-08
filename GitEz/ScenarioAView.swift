@@ -18,7 +18,7 @@ extension Color {
 }
 
 // MARK: - App Section (for in-app navigation)
-public enum AppSection: Equatable { case workspace, settings }
+public enum AppSection: Equatable { case workspace, insights, settings }
 
 // MARK: - Accent Preset
 enum AccentPreset: String, CaseIterable, Identifiable {
