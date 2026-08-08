@@ -21,16 +21,12 @@ struct SidebarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
 
-            // ── Logo / App title header ──
+            // ── App title header ──
             HStack(spacing: 8) {
-                Image("AppLogo")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 22, height: 22)
-                    .cornerRadius(5)
                 Text("ZGit")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 19, weight: .bold, design: .rounded))
                     .foregroundColor(t.textPrimary)
+                    .tracking(-0.4)
                 Spacer()
             }
             .padding(.horizontal, 14)

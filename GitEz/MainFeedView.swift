@@ -4,8 +4,9 @@ struct MainFeedView: View {
     @EnvironmentObject var gitService: GitService
     @Environment(\.theme) var t
 
-    @State private var newBranchInput  = ""
-    @State private var showBranchAlert = false
+    @State private var newBranchInput   = ""
+    @State private var showBranchAlert  = false
+    @State private var showDiscardAlert = false
 
     private var hasWorkspace: Bool {
         !gitService.workspaces.isEmpty && gitService.activeWorkspace != nil
@@ -459,7 +460,7 @@ struct MainFeedView: View {
                 }
                 .padding(.vertical, 24)
             } else {
-                // Select all header
+                // Select all header & Discard action
                 HStack {
                     Button(action: {
                         let all = Set(gitService.activeStatus.modifiedFiles)
@@ -476,10 +477,30 @@ struct MainFeedView: View {
                         }
                     }
                     .buttonStyle(.plain)
+
                     Spacer()
+
+                    Button(action: { showDiscardAlert = true }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "trash").font(.system(size: 10))
+                            Text("Discard changes").font(.system(size: 11))
+                        }
+                        .foregroundColor(t.textTertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .confirmationDialog("Discard working tree changes?", isPresented: $showDiscardAlert) {
+                        Button("Discard All Changes", role: .destructive) {
+                            gitService.discardAllUnstagedChanges()
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This will permanently discard all uncommitted changes in your workspace.")
+                    }
+
                     Text("\(gitService.selectedFilesToStage.count) of \(gitService.activeStatus.modifiedFiles.count)")
                         .font(.system(size: 11, design: .monospaced))
                         .foregroundColor(t.textTertiary)
+                        .padding(.leading, 8)
                 }
 
                 // File rows

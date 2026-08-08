@@ -579,6 +579,15 @@ public class GitService: ObservableObject {
         }
     }
 
+    // MARK: - Discard Changes Helper
+    public func discardAllUnstagedChanges() {
+        guard let ws = activeWorkspace else { return }
+        _ = runGitCommand(["restore", "."], inDir: ws.path)
+        _ = runGitCommand(["clean", "-fd"], inDir: ws.path)
+        refreshActiveStatus()
+        feedItems.append(FeedCardItem(type: .info("Discarded all uncommitted working tree changes")))
+    }
+
     public func forceStageAllFiles() {
         guard let ws = activeWorkspace else { return }
         let dir = ws.path
