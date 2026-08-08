@@ -1,7 +1,6 @@
 import SwiftUI
-import AppKit
 
-// MARK: - Sidebar View
+// MARK: - Sidebar
 struct SidebarView: View {
     @EnvironmentObject var gitService: GitService
     @Environment(\.theme) var t
@@ -22,51 +21,23 @@ struct SidebarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
 
-            // ── 1. Logo / Window Header ──
-            HStack(spacing: 9) {
+            // ── Logo / App title header ──
+            HStack(spacing: 8) {
                 Image("AppLogo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 24, height: 24)
-                    .cornerRadius(6)
-                    .shadow(color: Color.black.opacity(0.35), radius: 3, x: 0, y: 1)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 5) {
-                        Text("ZGit")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(t.textPrimary)
-                        Text("v2.5")
-                            .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundColor(t.accent)
-                            .padding(.horizontal, 4).padding(.vertical, 1)
-                            .background(t.accentMuted)
-                            .cornerRadius(4)
-                    }
-                    Text("macOS 27 Liquid Glass")
-                        .font(.system(size: 10))
-                        .foregroundColor(t.textTertiary)
-                }
-
+                    .frame(width: 22, height: 22)
+                    .cornerRadius(5)
+                Text("ZGit")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(t.textPrimary)
                 Spacer()
-
-                // Refresh Status Button
-                Button(action: { gitService.refreshActiveStatus() }) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(t.textSecondary)
-                        .frame(width: 24, height: 24)
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .help("Refresh Git status (⌘R)")
             }
             .padding(.horizontal, 14)
             .padding(.top, 18)
-            .padding(.bottom, 14)
+            .padding(.bottom, 16)
 
-            // ── 2. Live Search Box ──
+            // ── Search bar ──
             HStack(spacing: 7) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 11))
@@ -83,122 +54,48 @@ struct SidebarView: View {
                     }
                     .buttonStyle(.plain)
                 } else {
-                    Text("⌘K")
-                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    Text("/")
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(t.textTertiary)
-                        .padding(.horizontal, 4).padding(.vertical, 1)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(3)
+                        .frame(width: 20, height: 18)
+                        .background(Color.white.opacity(0.07))
+                        .cornerRadius(4)
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.vertical, 7)
             .background(Color.white.opacity(0.05))
             .cornerRadius(8)
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(t.border, lineWidth: 1))
-            .padding(.horizontal, 12)
-            .padding(.bottom, 14)
+            .padding(.horizontal, 10)
+            .padding(.bottom, 18)
 
-            // ── 3. Active Repository Summary Card ──
-            if let activeWs = gitService.activeWorkspace {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 6) {
-                        Circle().fill(gitService.activeStatus.modifiedFiles.isEmpty ? Color.green : t.accent)
-                            .frame(width: 6, height: 6)
-                        Text(activeWs.name)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(t.textPrimary)
-                            .lineLimit(1)
-                        Spacer()
-                    }
-
-                    HStack(spacing: 8) {
-                        HStack(spacing: 3) {
-                            Image(systemName: "arrow.triangle.branch").font(.system(size: 8))
-                            Text(gitService.activeStatus.currentBranch.isEmpty ? "main" : gitService.activeStatus.currentBranch)
-                                .font(.system(size: 10, design: .monospaced))
-                        }
-                        .foregroundColor(t.accent)
-
-                        Spacer()
-
-                        Text("\(gitService.activeStatus.modifiedFiles.count) changed")
-                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                            .foregroundColor(t.textSecondary)
-                    }
-
-                    // IDE Quick Launcher Row
-                    HStack(spacing: 6) {
-                        Button(action: { gitService.openInIDE(.vscode) }) {
-                            HStack(spacing: 3) {
-                                Image(systemName: "chevron.left.forwardslash.chevron.right").font(.system(size: 8))
-                                Text("VS Code").font(.system(size: 10, weight: .medium))
-                            }
-                            .foregroundColor(t.textSecondary)
-                            .padding(.horizontal, 6).padding(.vertical, 3)
-                            .background(Color.white.opacity(0.06))
-                            .cornerRadius(4)
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(action: { gitService.openInIDE(.finder) }) {
-                            HStack(spacing: 3) {
-                                Image(systemName: "folder").font(.system(size: 8))
-                                Text("Finder").font(.system(size: 10, weight: .medium))
-                            }
-                            .foregroundColor(t.textSecondary)
-                            .padding(.horizontal, 6).padding(.vertical, 3)
-                            .background(Color.white.opacity(0.06))
-                            .cornerRadius(4)
-                        }
-                        .buttonStyle(.plain)
-
-                        Spacer()
-                    }
-                    .padding(.top, 2)
-                }
-                .padding(10)
-                .background(t.surface)
-                .cornerRadius(8)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(t.border, lineWidth: 1))
-                .padding(.horizontal, 12)
-                .padding(.bottom, 14)
-            }
-
-            // ── 4. Projects Section Header ──
+            // ── Projects header ──
             HStack {
-                Text("WORKSPACES")
-                    .font(.system(size: 10, weight: .bold))
+                Text("PROJECTS")
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(t.textTertiary)
                     .tracking(1.0)
                 Spacer()
                 Button(action: { gitService.showAddWorkspaceModal = true }) {
-                    HStack(spacing: 3) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("Add")
-                            .font(.system(size: 10, weight: .semibold))
-                    }
-                    .foregroundColor(t.accent)
-                    .padding(.horizontal, 7).padding(.vertical, 3)
-                    .background(t.accentMuted)
-                    .cornerRadius(5)
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(t.textSecondary)
+                        .frame(width: 22, height: 20)
+                        .background(Color.white.opacity(0.06))
+                        .cornerRadius(4)
                 }
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 14)
-            .padding(.bottom, 6)
+            .padding(.bottom, 4)
 
-            // ── 5. Workspace List ──
+            // ── Workspace list ──
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 2) {
+                VStack(spacing: 1) {
                     if filteredWorkspaces.isEmpty {
-                        VStack(spacing: 8) {
-                            Image(systemName: "folder.badge.plus")
-                                .font(.system(size: 22))
-                                .foregroundColor(t.textTertiary)
-                            Text(searchQuery.isEmpty ? "No projects added" : "No matching projects")
-                                .font(.system(size: 11))
+                        VStack(spacing: 10) {
+                            Text(searchQuery.isEmpty ? "No projects yet" : "No matches")
+                                .font(.system(size: 12))
                                 .foregroundColor(t.textTertiary)
                             if searchQuery.isEmpty {
                                 Button(action: { gitService.showAddWorkspaceModal = true }) {
@@ -210,91 +107,57 @@ struct SidebarView: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 20)
+                        .padding(.vertical, 28)
                     } else {
                         ForEach(filteredWorkspaces) { ws in
                             WorkspaceRow(workspace: ws)
                         }
                     }
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 6)
             }
 
             Spacer(minLength: 0)
 
             Rectangle().fill(t.divider).frame(height: 1)
 
-            // ── 6. Navigation Options ──
+            // ── Bottom navigation ──
             VStack(spacing: 2) {
-                NavRow(icon: "sidebar.left",
-                       label: "Pipeline Feed",
-                       isActive: gitService.currentSection == .workspace) {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        gitService.currentSection = .workspace
-                    }
-                }
-                NavRow(icon: "chart.bar",
-                       label: "Repository Insights",
-                       isActive: gitService.currentSection == .insights) {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        gitService.currentSection = .insights
-                    }
-                }
                 NavRow(icon: "clock.arrow.circlepath",
-                       label: "Commit History",
+                       label: "History",
                        badge: gitService.commitHistory.isEmpty ? nil : "\(gitService.commitHistory.count)") {
                     gitService.showHistoryModal = true
-                }
-                NavRow(icon: "terminal",
-                       label: "Debug Console",
-                       isActive: gitService.showTerminalConsole) {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        gitService.showTerminalConsole.toggle()
-                    }
                 }
                 NavRow(icon: "gearshape",
                        label: "Settings",
                        isActive: gitService.currentSection == .settings) {
-                    withAnimation(.easeInOut(duration: 0.15)) {
+                    withAnimation(.easeInOut(duration: 0.16)) {
                         gitService.currentSection = gitService.currentSection == .settings ? .workspace : .settings
                     }
                 }
             }
             .padding(.horizontal, 6)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
 
             Rectangle().fill(t.divider).frame(height: 1)
 
-            // ── 7. User Profile Card ──
+            // ── User footer ──
             HStack(spacing: 9) {
-                ZStack(alignment: .bottomTrailing) {
+                ZStack {
                     Circle()
-                        .fill(LinearGradient(
-                            colors: [t.accent, t.accentSecondary],
-                            startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 26, height: 26)
+                        .fill(t.accent)
+                        .frame(width: 24, height: 24)
                     Text(String(gitService.gitUser.username.prefix(1)).uppercased())
                         .font(.system(size: 11, weight: .black, design: .rounded))
                         .foregroundColor(.white)
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 7, height: 7)
-                        .overlay(Circle().stroke(t.sidebar, lineWidth: 1.5))
                 }
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(gitService.gitUser.username.isEmpty ? "Set up account" : "@\(gitService.gitUser.username)")
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .foregroundColor(t.textPrimary)
-                        .lineLimit(1)
-                    Text(gitService.gitUser.token.isEmpty ? "No PAT Token" : "Token Active ✓")
-                        .font(.system(size: 9))
-                        .foregroundColor(gitService.gitUser.token.isEmpty ? t.textTertiary : Color.green)
-                }
-
+                Text(gitService.gitUser.username.isEmpty ? "Set up account" : "@\(gitService.gitUser.username)")
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundColor(t.textSecondary)
+                    .lineLimit(1)
                 Spacer()
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 14)
             .padding(.vertical, 10)
         }
         .frame(width: 232)
@@ -302,7 +165,7 @@ struct SidebarView: View {
     }
 }
 
-// MARK: - Workspace Row Component
+// MARK: - Workspace Row
 private struct WorkspaceRow: View {
     @EnvironmentObject var gitService: GitService
     @Environment(\.theme) var t
@@ -319,7 +182,7 @@ private struct WorkspaceRow: View {
             gitService.refreshActiveStatus()
         }) {
             HStack(spacing: 0) {
-                // Left Accent Line
+                // Accent bar
                 RoundedRectangle(cornerRadius: 1)
                     .fill(isSelected ? t.accent : Color.clear)
                     .frame(width: 2)
@@ -327,15 +190,15 @@ private struct WorkspaceRow: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(workspace.name)
-                        .font(.system(size: 12, weight: isSelected ? .bold : .medium))
+                        .font(.system(size: 13, weight: isSelected ? .medium : .regular))
                         .foregroundColor(isSelected ? t.textPrimary : t.textSecondary)
                         .lineLimit(1)
-                    HStack(spacing: 4) {
+                    HStack(spacing: 3) {
                         Image(systemName: "arrow.triangle.branch").font(.system(size: 8))
                         Text(workspace.selectedBranch.isEmpty ? "main" : workspace.selectedBranch)
                             .font(.system(size: 10, design: .monospaced))
                     }
-                    .foregroundColor(isSelected ? t.accent : t.textTertiary)
+                    .foregroundColor(isSelected ? t.accent.opacity(0.8) : t.textTertiary)
                 }
                 .padding(.leading, 10)
                 .padding(.vertical, 7)
@@ -344,18 +207,18 @@ private struct WorkspaceRow: View {
 
                 if changeCount > 0 {
                     Text("\(changeCount)")
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .foregroundColor(t.accent)
                         .padding(.horizontal, 5).padding(.vertical, 2)
                         .background(t.accentMuted)
                         .cornerRadius(4)
-                        .padding(.trailing, 8)
+                        .padding(.trailing, 10)
                 }
             }
             .background(
                 RoundedRectangle(cornerRadius: 6)
                     .fill(isSelected
-                          ? Color.white.opacity(0.08)
+                          ? Color.white.opacity(0.07)
                           : (hovered ? Color.white.opacity(0.04) : Color.clear))
             )
         }
@@ -363,17 +226,14 @@ private struct WorkspaceRow: View {
         .onHover { hovered = $0 }
         .animation(.easeInOut(duration: 0.1), value: hovered)
         .contextMenu {
-            Button("Open in VS Code") { gitService.openInIDE(.vscode, path: workspace.path) }
-            Button("Open in Finder") { gitService.openInIDE(.finder, path: workspace.path) }
-            Divider()
-            Button("Remove Workspace", role: .destructive) {
+            Button("Remove Project", role: .destructive) {
                 gitService.removeWorkspace(id: workspace.id)
             }
         }
     }
 }
 
-// MARK: - Nav Row Component
+// MARK: - Nav Row
 private struct NavRow: View {
     @Environment(\.theme) var t
     let icon: String
@@ -391,7 +251,7 @@ private struct NavRow: View {
                     .foregroundColor(isActive ? t.accent : (hovered ? t.textPrimary : t.textSecondary))
                     .frame(width: 14)
                 Text(label)
-                    .font(.system(size: 12, weight: isActive ? .semibold : .regular))
+                    .font(.system(size: 13))
                     .foregroundColor(isActive ? t.accent : (hovered ? t.textPrimary : t.textSecondary))
                 Spacer()
                 if let badge {

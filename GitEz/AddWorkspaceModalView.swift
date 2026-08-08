@@ -81,8 +81,7 @@ struct AddWorkspaceModalView: View {
             .frame(width: 520)
             .background(t.surface)
             .cornerRadius(14)
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(t.border, lineWidth: 1))
-            .shadow(color: .black.opacity(0.35), radius: 28, x: 0, y: 12)
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(t.border, lineWidth: 1))
         }
     }
 

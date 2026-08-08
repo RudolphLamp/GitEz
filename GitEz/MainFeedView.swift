@@ -94,8 +94,6 @@ struct MainFeedView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 72, height: 72)
                     .cornerRadius(16)
-                    .shadow(color: Color(hex: "#7C6BCF").opacity(0.35), radius: 24, x: 0, y: 8)
-                    .shadow(color: Color.black.opacity(0.4), radius: 8, x: 0, y: 4)
 
                 VStack(spacing: 8) {
                     Text("What should we commit?")
@@ -117,11 +115,8 @@ struct MainFeedView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 22)
                     .padding(.vertical, 11)
-                    .background(LinearGradient(
-                        colors: [t.accent, t.accentSecondary],
-                        startPoint: .leading, endPoint: .trailing))
+                    .background(t.accent)
                     .cornerRadius(10)
-                    .shadow(color: t.accent.opacity(0.4), radius: 10, x: 0, y: 4)
                 }
                 .buttonStyle(.plain)
             }
@@ -221,11 +216,8 @@ struct MainFeedView: View {
                 .foregroundColor(.white)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)
-                .background(LinearGradient(
-                    colors: [t.accent, t.accentSecondary],
-                    startPoint: .leading, endPoint: .trailing))
+                .background(t.accent)
                 .cornerRadius(6)
-                .shadow(color: t.accent.opacity(0.3), radius: 4, x: 0, y: 2)
             }
             .buttonStyle(.plain)
             .help("Force stage all modified and untracked files in this workspace.")
@@ -364,11 +356,8 @@ struct MainFeedView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(LinearGradient(
-                        colors: [t.accent, t.accentSecondary],
-                        startPoint: .leading, endPoint: .trailing))
+                    .background(t.accent)
                     .cornerRadius(7)
-                    .shadow(color: t.accent.opacity(0.3), radius: 6, x: 0, y: 3)
                 }
                 .buttonStyle(.plain)
             }
@@ -620,15 +609,8 @@ struct MainFeedView: View {
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 32, height: 32)
-                        .background(
-                            gitService.commitMessage.trimmingCharacters(in: .whitespaces).isEmpty
-                            ? LinearGradient(colors: [t.accent.opacity(0.4), t.accentSecondary.opacity(0.4)],
-                                             startPoint: .top, endPoint: .bottom)
-                            : LinearGradient(colors: [t.accent, t.accentSecondary],
-                                             startPoint: .top, endPoint: .bottom)
-                        )
+                        .background(gitService.commitMessage.trimmingCharacters(in: .whitespaces).isEmpty ? t.accent.opacity(0.4) : t.accent)
                         .clipShape(Circle())
-                        .shadow(color: t.accent.opacity(0.4), radius: 6, x: 0, y: 3)
                 }
                 .buttonStyle(.plain)
                 .disabled(gitService.commitMessage.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -639,7 +621,6 @@ struct MainFeedView: View {
         .background(t.surface)
         .cornerRadius(14)
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(t.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.15), radius: 16, x: 0, y: 6)
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -688,11 +669,8 @@ struct MainFeedView: View {
         VStack(spacing: 20) {
             ZStack {
                 Circle()
-                    .fill(LinearGradient(
-                        colors: [t.accent, t.accentSecondary],
-                        startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .fill(t.accent)
                     .frame(width: 56, height: 56)
-                    .shadow(color: t.accent.opacity(0.45), radius: 14, x: 0, y: 6)
                 Image(systemName: "checkmark")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.white)
@@ -713,11 +691,8 @@ struct MainFeedView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 10)
-                    .background(LinearGradient(
-                        colors: [t.accent, t.accentSecondary],
-                        startPoint: .leading, endPoint: .trailing))
+                    .background(t.accent)
                     .cornerRadius(9)
-                    .shadow(color: t.accent.opacity(0.35), radius: 8, x: 0, y: 4)
                 }
                 .buttonStyle(.plain)
             }
@@ -738,11 +713,8 @@ struct MainFeedView: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(disabled
-                        ? LinearGradient(colors: [t.accent.opacity(0.35), t.accentSecondary.opacity(0.35)], startPoint: .leading, endPoint: .trailing)
-                        : LinearGradient(colors: [t.accent, t.accentSecondary], startPoint: .leading, endPoint: .trailing))
+            .background(disabled ? t.accent.opacity(0.35) : t.accent)
             .cornerRadius(9)
-            .shadow(color: disabled ? .clear : t.accent.opacity(0.3), radius: 8, x: 0, y: 3)
         }
         .buttonStyle(.plain)
         .disabled(disabled)

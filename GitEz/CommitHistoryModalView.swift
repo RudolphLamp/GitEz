@@ -98,7 +98,6 @@ struct CommitHistoryModalView: View {
             .background(t.surface)
             .cornerRadius(14)
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(t.border, lineWidth: 1))
-            .shadow(color: .black.opacity(0.35), radius: 28, x: 0, y: 12)
         }
     }
 }
