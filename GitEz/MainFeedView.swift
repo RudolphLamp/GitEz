@@ -230,6 +230,37 @@ struct MainFeedView: View {
             .buttonStyle(.plain)
             .help("Force stage all modified and untracked files in this workspace.")
 
+            // Stash Menu Button
+            Menu {
+                Button(action: { gitService.stashChanges() }) {
+                    Label("Stash Working Tree", systemImage: "tray.and.arrow.down")
+                }
+                Button(action: { gitService.popStash() }) {
+                    Label("Pop Latest Stash (\(gitService.stashCount))", systemImage: "tray.and.arrow.up")
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "tray").font(.system(size: 10))
+                    Text("Stash")
+                        .font(.system(size: 11, weight: .medium))
+                    if gitService.stashCount > 0 {
+                        Text("\(gitService.stashCount)")
+                            .font(.system(size: 9, weight: .bold))
+                            .padding(.horizontal, 4).padding(.vertical, 1)
+                            .background(t.accent)
+                            .foregroundColor(.white)
+                            .clipShape(Circle())
+                    }
+                }
+                .foregroundColor(t.textSecondary)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(Color.white.opacity(0.06))
+                .cornerRadius(6)
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(t.border, lineWidth: 1))
+            }
+            .menuStyle(.borderlessButton).fixedSize()
+
             // Branch menu
             Menu {
                 Section("Branches") {
@@ -490,12 +521,12 @@ struct MainFeedView: View {
                     .frame(minHeight: 100, maxHeight: 160)
             }
 
-            // Quick prefix chips
+            // Quick prefix chips & Auto-Generate button
             HStack(spacing: 6) {
                 Text("Prefix:")
                     .font(.system(size: 11))
                     .foregroundColor(t.textTertiary)
-                ForEach(["feat:", "fix:", "chore:", "docs:"], id: \.self) { p in
+                ForEach(["feat:", "fix:", "chore:", "docs:", "test:"], id: \.self) { p in
                     Button(p) {
                         if !gitService.commitMessage.hasPrefix(p) {
                             gitService.commitMessage = p + " " + gitService.commitMessage
@@ -512,6 +543,22 @@ struct MainFeedView: View {
                     .buttonStyle(.plain)
                 }
                 Spacer()
+
+                Button(action: {
+                    gitService.generateSmartCommitMessage()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "wand.and.stars").font(.system(size: 10))
+                        Text("Auto-Generate").font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundColor(t.accent)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(t.accentMuted)
+                    .cornerRadius(5)
+                }
+                .buttonStyle(.plain)
+                .help("Analyze modified files and auto-generate a Conventional Commit message")
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 10)

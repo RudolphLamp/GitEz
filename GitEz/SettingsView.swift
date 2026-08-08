@@ -2,15 +2,19 @@ import SwiftUI
 
 // MARK: - Settings Tabs
 private enum SettingsTab: String, CaseIterable {
-    case general    = "General"
-    case appearance = "Appearance"
-    case workflow   = "Workflow"
+    case general      = "General"
+    case appearance   = "Appearance"
+    case workflow     = "Workflow"
+    case integrations = "Integrations"
+    case security     = "Security & GPG"
 
     var icon: String {
         switch self {
-        case .general:    return "person.circle"
-        case .appearance: return "paintbrush"
-        case .workflow:   return "arrow.triangle.branch"
+        case .general:      return "person.circle"
+        case .appearance:   return "paintbrush"
+        case .workflow:     return "arrow.triangle.branch"
+        case .integrations: return "hammer"
+        case .security:     return "shield.checkmark"
         }
     }
 }
@@ -20,8 +24,12 @@ struct SettingsPageView: View {
     @EnvironmentObject var gitService: GitService
     @Environment(\.theme) var t
 
-    @AppStorage("appTheme")     private var selectedTheme: AppTheme    = .dark
-    @AppStorage("accentPreset") private var accentRaw: String          = AccentPreset.gitez.rawValue
+    @AppStorage("appTheme")              private var selectedTheme: AppTheme = .dark
+    @AppStorage("accentPreset")          private var accentRaw: String       = AccentPreset.gitez.rawValue
+    @AppStorage("preferredIDE")          private var preferredIDE: String    = "VS Code"
+    @AppStorage("gpgSigningEnabled")     private var gpgSigningEnabled: Bool  = false
+    @AppStorage("autoFetchInterval")     private var fetchIntervalSec: Int   = 5
+    @AppStorage("defaultCommitPrefix")   private var defaultPrefix: String   = "feat:"
 
     @State private var activeTab: SettingsTab = .general
     @State private var usernameInput          = ""
@@ -90,9 +98,11 @@ struct SettingsPageView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
                     switch activeTab {
-                    case .general:    generalSection
-                    case .appearance: appearanceSection
-                    case .workflow:   workflowSection
+                    case .general:      generalSection
+                    case .appearance:   appearanceSection
+                    case .workflow:     workflowSection
+                    case .integrations: integrationsSection
+                    case .security:     securitySection
                     }
                 }
                 .padding(40)
@@ -274,6 +284,91 @@ struct SettingsPageView: View {
                     Toggle("", isOn: $gitService.autoOpenPROnPush)
                         .toggleStyle(.switch)
                         .labelsHidden()
+                }
+                .padding(16)
+            }
+            .background(t.surface)
+            .cornerRadius(10)
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(t.border, lineWidth: 1))
+        }
+    }
+
+    // MARK: Integrations
+    private var integrationsSection: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            sectionHeader("Integrations & Tools", subtitle: "Configure external editor launchers and CLI shell paths.")
+
+            VStack(spacing: 0) {
+                settingsRow("Primary IDE Launcher") {
+                    Picker("", selection: $preferredIDE) {
+                        Text("Visual Studio Code").tag("VS Code")
+                        Text("Cursor").tag("Cursor")
+                        Text("Antigravity").tag("Antigravity")
+                        Text("Xcode").tag("Xcode")
+                        Text("Terminal").tag("Terminal")
+                        Text("Finder").tag("Finder")
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 180)
+                }
+                
+                Divider().background(t.divider)
+
+                settingsRow("Auto-Fetch Refresh Rate") {
+                    Picker("", selection: $fetchIntervalSec) {
+                        Text("5 Seconds (Recommended)").tag(5)
+                        Text("15 Seconds").tag(15)
+                        Text("30 Seconds").tag(30)
+                        Text("Manual Only").tag(0)
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 180)
+                }
+            }
+            .background(t.surface)
+            .cornerRadius(10)
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(t.border, lineWidth: 1))
+        }
+    }
+
+    // MARK: Security & GPG
+    private var securitySection: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            sectionHeader("Security & Integrity", subtitle: "Manage commit signing and safeguard options.")
+
+            VStack(spacing: 0) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("GPG Commit Signing")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(t.textPrimary)
+                        Text("Sign commits automatically with your local GPG key.")
+                            .font(.system(size: 12))
+                            .foregroundColor(t.textSecondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $gpgSigningEnabled)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+                .padding(16)
+
+                Divider().background(t.divider)
+
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Conflict Marker Guard (git diff --check)")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(t.textPrimary)
+                        Text("Block staging and committing when leftover <<<<<<< HEAD markers exist.")
+                            .font(.system(size: 12))
+                            .foregroundColor(t.textSecondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: .constant(true))
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                        .disabled(true)
                 }
                 .padding(16)
             }

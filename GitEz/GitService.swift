@@ -504,6 +504,81 @@ public class GitService: ObservableObject {
         return []
     }
 
+    // MARK: - Git Stash Operations
+    @Published public var stashCount: Int = 0
+    
+    public func updateStashCount() {
+        guard let ws = activeWorkspace else { stashCount = 0; return }
+        let res = runGitCommand(["stash", "list"], inDir: ws.path, silent: true)
+        let lines = res.output.components(separatedBy: .newlines).filter { !$0.isEmpty }
+        self.stashCount = lines.count
+    }
+    
+    public func stashChanges() {
+        guard let ws = activeWorkspace else { return }
+        let timeStr = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .medium)
+        _ = runGitCommand(["stash", "save", "ZGit Stash (\(timeStr))"], inDir: ws.path)
+        updateStashCount()
+        refreshActiveStatus()
+        feedItems.append(FeedCardItem(type: .info("Stashed changes to working tree")))
+    }
+    
+    public func popStash() {
+        guard let ws = activeWorkspace else { return }
+        _ = runGitCommand(["stash", "pop"], inDir: ws.path)
+        updateStashCount()
+        refreshActiveStatus()
+        feedItems.append(FeedCardItem(type: .info("Popped latest stash to working tree")))
+    }
+
+    // MARK: - Smart Commit Message Generator
+    public func generateSmartCommitMessage() {
+        let files = activeStatus.modifiedFiles
+        guard !files.isEmpty else {
+            commitMessage = "chore: update workspace files"
+            return
+        }
+        
+        var extCounts: [String: Int] = [:]
+        for f in files {
+            let ext = (f as NSString).pathExtension.lowercased()
+            if !ext.isEmpty {
+                extCounts[ext, default: 0] += 1
+            }
+        }
+        
+        let hasSwift = (extCounts["swift"] ?? 0) > 0
+        let hasWeb = (extCounts["ts"] ?? 0) > 0 || (extCounts["tsx"] ?? 0) > 0 || (extCounts["js"] ?? 0) > 0 || (extCounts["jsx"] ?? 0) > 0
+        let hasCss = (extCounts["css"] ?? 0) > 0 || (extCounts["scss"] ?? 0) > 0
+        let hasDocs = (extCounts["md"] ?? 0) > 0 || (extCounts["txt"] ?? 0) > 0
+        let hasConfig = (extCounts["json"] ?? 0) > 0 || (extCounts["yml"] ?? 0) > 0 || (extCounts["yaml"] ?? 0) > 0
+        
+        if hasSwift {
+            if files.contains(where: { $0.contains("View") }) {
+                commitMessage = "feat(ui): update SwiftUI views and user interface layout"
+            } else if files.contains(where: { $0.contains("Service") || $0.contains("Model") }) {
+                commitMessage = "feat(core): update reactive state service and data models"
+            } else {
+                commitMessage = "feat(app): update Swift modules and application logic"
+            }
+        } else if hasWeb {
+            if files.contains(where: { $0.contains("controller") || $0.contains("routes") || $0.contains("api") }) {
+                commitMessage = "feat(api): update backend controllers, routes, and endpoints"
+            } else {
+                commitMessage = "feat(frontend): update component state and web application logic"
+            }
+        } else if hasCss {
+            commitMessage = "style(ui): update CSS design system and visual tokens"
+        } else if hasDocs {
+            commitMessage = "docs: update documentation and project specifications"
+        } else if hasConfig {
+            commitMessage = "chore(config): update project configuration and build dependencies"
+        } else {
+            let firstFile = (files.first as NSString? ?? "").lastPathComponent
+            commitMessage = "feat: update \(firstFile)"
+        }
+    }
+
     public func forceStageAllFiles() {
         guard let ws = activeWorkspace else { return }
         let dir = ws.path
