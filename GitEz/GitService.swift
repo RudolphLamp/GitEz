@@ -504,6 +504,28 @@ public class GitService: ObservableObject {
         return []
     }
 
+    public func forceStageAllFiles() {
+        guard let ws = activeWorkspace else { return }
+        let dir = ws.path
+        
+        let conflicts = checkForConflictMarkers(inDir: dir)
+        if !conflicts.isEmpty {
+            feedItems.append(FeedCardItem(type: .pushError("Cannot stage: Conflict markers detected in \(conflicts.joined(separator: ", "))")))
+            return
+        }
+        
+        _ = runGitCommand(["add", "."], inDir: dir)
+        
+        onlyChangesFromNow = false
+        refreshActiveStatus()
+        
+        selectedFilesToStage = Set(activeStatus.modifiedFiles)
+        completedSteps.insert(.stage)
+        completedSteps.insert(.writeCommit)
+        feedItems.append(FeedCardItem(type: .stagedSuccess(activeStatus.modifiedFiles.count, activeStatus.modifiedFiles)))
+        currentStep = .commit
+    }
+
     public func executeStageFiles() {
         guard let ws = activeWorkspace else { return }
         let dir = ws.path

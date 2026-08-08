@@ -3,434 +3,374 @@ import AppKit
 
 struct AddWorkspaceModalView: View {
     @EnvironmentObject var gitService: GitService
-    
+    @Environment(\.theme) var t
+
     @State private var step: Int = 1
-    @State private var folderPath: String = ""
-    @State private var remoteUrlInput: String = ""
-    @State private var isFetchingBranches: Bool = false
+    @State private var folderPath         = ""
+    @State private var remoteUrlInput     = ""
+    @State private var isFetchingBranches = false
     @State private var availableBranches: [String] = []
-    @State private var selectedBranch: String = "main"
-    @State private var newBranchInput: String = ""
-    @State private var isCreatingNewBranch: Bool = false
-    
+    @State private var selectedBranch     = "main"
+    @State private var newBranchInput     = ""
+    @State private var isCreatingBranch   = false
+
     var body: some View {
         ZStack {
-            Color.black.opacity(0.65)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    gitService.showAddWorkspaceModal = false
-                }
-            
-            VStack(alignment: .leading, spacing: 20) {
-                // HEADER
-                HStack {
-                    HStack(spacing: 8) {
-                        Image(systemName: "folder.badge.plus")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
-                        
-                        Text("Add New Workspace")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                    
+            Color.black.opacity(0.5).ignoresSafeArea()
+                .onTapGesture { gitService.showAddWorkspaceModal = false }
+
+            VStack(alignment: .leading, spacing: 0) {
+                // Header
+                HStack(spacing: 10) {
+                    Image(systemName: "folder.badge.plus")
+                        .font(.system(size: 16))
+                        .foregroundColor(t.accent)
+                    Text("Add New Project")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(t.textPrimary)
                     Spacer()
-                    
-                    Text("STEP \(step) OF 4")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
+                    // Step badge
+                    Text("Step \(step) of 4")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundColor(t.accent)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.15))
+                        .background(t.accentMuted)
                         .cornerRadius(6)
-                    
                     Button(action: { gitService.showAddWorkspaceModal = false }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(Color.white.opacity(0.6))
+                            .foregroundColor(t.textTertiary)
                             .padding(6)
-                            .background(Color.white.opacity(0.08))
+                            .background(t.surfaceElevated)
                             .clipShape(Circle())
                     }
                     .buttonStyle(.plain)
                 }
-                
-                Divider()
-                    .background(Color.white.opacity(0.1))
-                
-                // WIZARD STEPS
-                switch step {
-                case 1:
-                    renderStep1FolderSelection()
-                case 2:
-                    renderStep2RemoteUrlInput()
-                case 3:
-                    renderStep3BranchSelection()
-                case 4:
-                    renderStep4IDECompletion()
-                default:
-                    EmptyView()
+                .padding(.horizontal, 24)
+                .padding(.top, 22)
+                .padding(.bottom, 18)
+
+                // Step progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Rectangle().fill(t.border).frame(height: 2)
+                        Rectangle()
+                            .fill(t.accent)
+                            .frame(width: geo.size.width * CGFloat(step) / 4.0, height: 2)
+                            .animation(.easeInOut(duration: 0.3), value: step)
+                    }
                 }
+                .frame(height: 2)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+
+                // Step content
+                Group {
+                    switch step {
+                    case 1: step1FolderSelection
+                    case 2: step2RemoteUrl
+                    case 3: step3BranchPicker
+                    case 4: step4Completion
+                    default: EmptyView()
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
             }
-            .padding(24)
             .frame(width: 520)
-            .background(
-                ZStack {
-                    VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
-                    Color(red: 0.1, green: 0.07, blue: 0.08).opacity(0.92)
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.5), radius: 24, x: 0, y: 12)
+            .background(t.surface)
+            .cornerRadius(14)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(t.border, lineWidth: 1))
+            .shadow(color: .black.opacity(0.35), radius: 28, x: 0, y: 12)
         }
     }
-    
-    // STEP 1: FOLDER SELECTION
-    @ViewBuilder
-    private func renderStep1FolderSelection() -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Step 1: Select Project Folder")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-            
-            Text("Choose a local repository or project directory on your Mac.")
-                .font(.system(size: 13, design: .rounded))
-                .foregroundColor(Color.white.opacity(0.6))
-            
-            HStack(spacing: 10) {
-                TextField("/Users/username/Projects/MyRepo", text: $folderPath)
+
+    // MARK: Step 1 — Folder
+    private var step1FolderSelection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            stepHeader(title: "Select project folder",
+                       subtitle: "Choose a local repository or project directory on your Mac.")
+
+            HStack(spacing: 8) {
+                TextField("/Users/you/Projects/MyRepo", text: $folderPath)
                     .font(.system(size: 13, design: .monospaced))
                     .textFieldStyle(.plain)
-                    .foregroundColor(.white)
+                    .foregroundColor(t.textPrimary)
                     .padding(10)
-                    .background(Color.white.opacity(0.06))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                
-                Button(action: selectFolderWithPanel) {
-                    Text("Browse...")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                    .background(t.surfaceElevated)
+                    .cornerRadius(7)
+                    .overlay(RoundedRectangle(cornerRadius: 7).stroke(t.border, lineWidth: 1))
+
+                Button(action: selectFolder) {
+                    Text("Browse…")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(t.textPrimary)
                         .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(8)
+                        .padding(.vertical, 9)
+                        .background(t.surfaceElevated)
+                        .cornerRadius(7)
+                        .overlay(RoundedRectangle(cornerRadius: 7).stroke(t.border, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
             }
-            
+
             HStack {
                 Spacer()
-                Button(action: {
-                    if !folderPath.isEmpty { step = 2 }
-                }) {
-                    Text("Next: Remote Repository →")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 10)
-                        .background(
-                            folderPath.isEmpty ? Color.white.opacity(0.1) : Color(red: 0.85, green: 0.25, blue: 0.22)
-                        )
-                        .cornerRadius(8)
-                }
-                .buttonStyle(.plain)
-                .disabled(folderPath.isEmpty)
+                nextButton(label: "Link remote repo  →", disabled: folderPath.isEmpty) { step = 2 }
             }
-            .padding(.top, 8)
         }
     }
-    
-    // STEP 2: REMOTE URL INPUT
-    @ViewBuilder
-    private func renderStep2RemoteUrlInput() -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Step 2: Link Remote GitHub Repository")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-            
-            Text("Enter the remote GitHub repository URL (defaults to empty).")
-                .font(.system(size: 13, design: .rounded))
-                .foregroundColor(Color.white.opacity(0.6))
-            
-            TextField("https://github.com/username/repository (Optional)", text: $remoteUrlInput)
+
+    // MARK: Step 2 — Remote URL
+    private var step2RemoteUrl: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            stepHeader(title: "Link a GitHub repository",
+                       subtitle: "Paste your GitHub repo URL. This is optional — you can add it later.")
+
+            TextField("https://github.com/username/repo (optional)", text: $remoteUrlInput)
                 .font(.system(size: 13, design: .monospaced))
                 .textFieldStyle(.plain)
-                .foregroundColor(.white)
+                .foregroundColor(t.textPrimary)
                 .padding(10)
-                .background(Color.white.opacity(0.06))
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
-            
+                .background(t.surfaceElevated)
+                .cornerRadius(7)
+                .overlay(RoundedRectangle(cornerRadius: 7).stroke(t.border, lineWidth: 1))
+
             HStack {
-                Button(action: { step = 1 }) {
-                    Text("← Back")
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.7))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(8)
-                }
-                .buttonStyle(.plain)
-                
+                backButton { step = 1 }
                 Spacer()
-                
                 Button(action: fetchBranchesAndNext) {
                     HStack(spacing: 6) {
                         if isFetchingBranches {
                             ProgressView().controlSize(.small)
-                            Text("Fetching Branches...")
+                            Text("Fetching branches…")
                         } else {
-                            Text("Next: Select Branch →")
+                            Text("Choose branch  →")
                         }
                     }
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .background(Color(red: 0.85, green: 0.25, blue: 0.22))
+                    .padding(.vertical, 9)
+                    .background(t.accent)
                     .cornerRadius(8)
                 }
                 .buttonStyle(.plain)
+                .disabled(isFetchingBranches)
             }
-            .padding(.top, 8)
         }
     }
-    
-    // STEP 3: BRANCH SELECTION
-    @ViewBuilder
-    private func renderStep3BranchSelection() -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Step 3: Choose Working Branch")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-            
-            Text("Select an existing branch pulled from GitHub or create a new one.")
-                .font(.system(size: 13, design: .rounded))
-                .foregroundColor(Color.white.opacity(0.6))
-            
-            if isCreatingNewBranch {
+
+    // MARK: Step 3 — Branch
+    private var step3BranchPicker: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            stepHeader(title: "Choose your working branch",
+                       subtitle: "Select an existing branch or create a new one.")
+
+            if isCreatingBranch {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("New Branch Name")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.7))
-                    
-                    HStack {
-                        TextField("feature/new-feature", text: $newBranchInput)
+                    Text("New branch name")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(t.textSecondary)
+                    HStack(spacing: 8) {
+                        TextField("feature/my-feature", text: $newBranchInput)
                             .font(.system(size: 13, design: .monospaced))
                             .textFieldStyle(.plain)
-                            .foregroundColor(.white)
+                            .foregroundColor(t.textPrimary)
                             .padding(10)
-                            .background(Color.white.opacity(0.06))
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.12), lineWidth: 1)
-                            )
-                        
-                        Button("Cancel") {
-                            isCreatingNewBranch = false
-                        }
-                        .font(.system(size: 12, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.6))
-                        .buttonStyle(.plain)
+                            .background(t.surfaceElevated)
+                            .cornerRadius(7)
+                            .overlay(RoundedRectangle(cornerRadius: 7).stroke(t.border, lineWidth: 1))
+                        Button("Cancel") { isCreatingBranch = false }
+                            .font(.system(size: 12))
+                            .foregroundColor(t.textSecondary)
+                            .buttonStyle(.plain)
                     }
                 }
             } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    ScrollView {
-                        VStack(spacing: 6) {
-                            ForEach(availableBranches, id: \.self) { bName in
-                                Button(action: { selectedBranch = bName }) {
-                                    HStack {
-                                        Image(systemName: selectedBranch == bName ? "checkmark.circle.fill" : "circle")
-                                            .foregroundColor(selectedBranch == bName ? Color(red: 0.91, green: 0.29, blue: 0.25) : Color.white.opacity(0.3))
-                                        Text(bName)
-                                            .font(.system(size: 13, design: .monospaced))
-                                            .foregroundColor(.white)
-                                        Spacer()
-                                    }
-                                    .padding(10)
-                                    .background(selectedBranch == bName ? Color.white.opacity(0.08) : Color.white.opacity(0.02))
-                                    .cornerRadius(8)
+                ScrollView {
+                    VStack(spacing: 2) {
+                        ForEach(availableBranches, id: \.self) { bName in
+                            Button(action: { selectedBranch = bName }) {
+                                HStack(spacing: 10) {
+                                    Image(systemName: selectedBranch == bName ? "checkmark.circle.fill" : "circle")
+                                        .foregroundColor(selectedBranch == bName ? t.accent : t.textTertiary)
+                                    Text(bName)
+                                        .font(.system(size: 13, design: .monospaced))
+                                        .foregroundColor(t.textPrimary)
+                                    Spacer()
                                 }
-                                .buttonStyle(.plain)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 9)
+                                .background(selectedBranch == bName ? t.accentMuted : t.surfaceElevated)
+                                .cornerRadius(7)
                             }
+                            .buttonStyle(.plain)
                         }
                     }
-                    .frame(maxHeight: 140)
-                    
-                    Button(action: { isCreatingNewBranch = true }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "plus")
-                            Text("Create & Checkout New Branch")
-                        }
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 4)
                 }
+                .frame(maxHeight: 160)
+
+                Button(action: { isCreatingBranch = true }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "plus")
+                        Text("Create new branch…")
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(t.accent)
+                }
+                .buttonStyle(.plain)
             }
-            
+
             HStack {
-                Button(action: { step = 2 }) {
-                    Text("← Back")
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.7))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(8)
-                }
-                .buttonStyle(.plain)
-                
+                backButton { step = 2 }
                 Spacer()
-                
-                Button(action: finishBranchSetup) {
-                    Text("Confirm & Create Workspace →")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 10)
-                        .background(Color(red: 0.85, green: 0.25, blue: 0.22))
-                        .cornerRadius(8)
+                nextButton(label: "Create workspace  →",
+                           disabled: isCreatingBranch && newBranchInput.isEmpty) {
+                    finishSetup()
                 }
-                .buttonStyle(.plain)
             }
-            .padding(.top, 8)
         }
     }
-    
-    // STEP 4: IDE OPEN COMPLETION
-    @ViewBuilder
-    private func renderStep4IDECompletion() -> some View {
-        VStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color(red: 0.91, green: 0.29, blue: 0.25).opacity(0.2))
-                    .frame(width: 56, height: 56)
-                Image(systemName: "checkmark")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Color(red: 0.91, green: 0.29, blue: 0.25))
-            }
-            
-            VStack(spacing: 4) {
-                Text("Workspace Ready! 🎉")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                Text("Where would you like to open your project?")
-                    .font(.system(size: 13, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.6))
-            }
-            
-            VStack(spacing: 8) {
-                HStack(spacing: 10) {
-                    Button(action: { gitService.openInIDE(.vscode, path: folderPath) }) {
-                        HStack {
-                            Text("🚀 VS Code")
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Button(action: { gitService.openInIDE(.cursor, path: folderPath) }) {
-                        HStack {
-                            Text("⚡️ Cursor")
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
+
+    // MARK: Step 4 — Done
+    private var step4Completion: some View {
+        VStack(spacing: 20) {
+            VStack(spacing: 10) {
+                ZStack {
+                    Circle().fill(t.accentMuted).frame(width: 56, height: 56)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(t.accent)
                 }
-                
-                HStack(spacing: 10) {
-                    Button(action: { gitService.openInIDE(.antigravity, path: folderPath) }) {
-                        HStack {
-                            Text("⚛️ Antigravity")
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                Text("Project added! 🎉")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(t.textPrimary)
+                Text("Open it in your preferred editor to start coding.")
+                    .font(.system(size: 13))
+                    .foregroundColor(t.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+
+            // IDE launcher grid
+            let ides: [(IDEApp, String, String)] = [
+                (.vscode,       "VS Code",     "chevron.left.forwardslash.chevron.right"),
+                (.cursor,       "Cursor",      "sparkles"),
+                (.antigravity,  "Antigravity", "bolt.fill"),
+                (.terminal,     "Terminal",    "terminal.fill")
+            ]
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ForEach(ides, id: \.0) { ide, label, icon in
+                    Button(action: { gitService.openInIDE(ide, path: folderPath) }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: icon)
+                                .font(.system(size: 13))
+                                .foregroundColor(t.textSecondary)
+                            Text(label)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(t.textPrimary)
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 10))
+                                .foregroundColor(t.textTertiary)
                         }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 14)
                         .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.08))
+                        .background(t.surfaceElevated)
                         .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Button(action: { gitService.openInIDE(.terminal, path: folderPath) }) {
-                        HStack {
-                            Text("🧠 Terminal")
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(t.border, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                 }
             }
-            
+
             Button(action: { gitService.showAddWorkspaceModal = false }) {
                 Text("Done")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color(red: 0.85, green: 0.25, blue: 0.22))
+                    .padding(.vertical, 10)
+                    .background(t.accent)
                     .cornerRadius(8)
             }
             .buttonStyle(.plain)
-            .padding(.top, 8)
         }
     }
-    
-    private func selectFolderWithPanel() {
+
+    // MARK: - Helpers
+    @ViewBuilder
+    private func stepHeader(title: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(t.textPrimary)
+            Text(subtitle)
+                .font(.system(size: 13))
+                .foregroundColor(t.textSecondary)
+        }
+    }
+
+    @ViewBuilder
+    private func nextButton(label: String, disabled: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 9)
+                .background(disabled ? t.accent.opacity(0.4) : t.accent)
+                .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+    }
+
+    @ViewBuilder
+    private func backButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: "chevron.left").font(.system(size: 10))
+                Text("Back")
+            }
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(t.textSecondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background(t.surfaceElevated)
+            .cornerRadius(8)
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(t.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func selectFolder() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        
         if panel.runModal() == .OK, let url = panel.url {
             folderPath = url.path
         }
     }
-    
+
     private func fetchBranchesAndNext() {
         isFetchingBranches = true
         Task {
             let branches = await gitService.fetchRemoteBranches(remoteUrl: remoteUrlInput, path: folderPath)
             availableBranches = branches
-            if let first = branches.first {
-                selectedBranch = first
-            }
+            selectedBranch = branches.first ?? "main"
             isFetchingBranches = false
             step = 3
         }
     }
-    
-    private func finishBranchSetup() {
-        let finalBranch = isCreatingNewBranch ? newBranchInput.trimmingCharacters(in: .whitespacesAndNewlines) : selectedBranch
-        gitService.addWorkspace(path: folderPath, remoteUrl: remoteUrlInput, targetBranch: finalBranch.isEmpty ? "main" : finalBranch)
+
+    private func finishSetup() {
+        let branch = isCreatingBranch
+            ? newBranchInput.trimmingCharacters(in: .whitespacesAndNewlines)
+            : selectedBranch
+        gitService.addWorkspace(path: folderPath, remoteUrl: remoteUrlInput,
+                                targetBranch: branch.isEmpty ? "main" : branch)
         step = 4
     }
 }
@@ -438,4 +378,5 @@ struct AddWorkspaceModalView: View {
 #Preview {
     AddWorkspaceModalView()
         .environmentObject(GitService())
+        .environment(\.theme, ThemeColors.make(.dark))
 }

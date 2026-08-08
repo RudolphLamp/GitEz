@@ -208,6 +208,28 @@ struct MainFeedView: View {
             .buttonStyle(.plain)
             .help(gitService.onlyChangesFromNow ? "Only tracking files modified since workspace was opened. Click to toggle all files." : "Tracking all modified/untracked files.")
 
+            // "Force Stage All" Button
+            Button(action: {
+                gitService.forceStageAllFiles()
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "plus.square.on.square.fill")
+                        .font(.system(size: 10))
+                    Text("Stage All")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(LinearGradient(
+                    colors: [t.accent, t.accentSecondary],
+                    startPoint: .leading, endPoint: .trailing))
+                .cornerRadius(6)
+                .shadow(color: t.accent.opacity(0.3), radius: 4, x: 0, y: 2)
+            }
+            .buttonStyle(.plain)
+            .help("Force stage all modified and untracked files in this workspace.")
+
             // Branch menu
             Menu {
                 Section("Branches") {
