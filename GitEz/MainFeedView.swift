@@ -178,82 +178,6 @@ struct MainFeedView: View {
                 }
             }
 
-            // "Track changes from now" Toggle Button
-            Button(action: {
-                gitService.onlyChangesFromNow.toggle()
-                if gitService.onlyChangesFromNow {
-                    gitService.resetBaselineForCurrentWorkspace()
-                } else {
-                    gitService.refreshActiveStatus()
-                }
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: gitService.onlyChangesFromNow ? "clock.badge.checkmark.fill" : "clock")
-                        .font(.system(size: 10))
-                    Text(gitService.onlyChangesFromNow ? "Changes from now" : "All files")
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .foregroundColor(gitService.onlyChangesFromNow ? t.accent : t.textSecondary)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(gitService.onlyChangesFromNow ? t.accentMuted : Color.white.opacity(0.06))
-                .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(
-                    gitService.onlyChangesFromNow ? t.accent.opacity(0.4) : t.border, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .help(gitService.onlyChangesFromNow ? "Only tracking files modified since workspace was opened. Click to toggle all files." : "Tracking all modified/untracked files.")
-
-            // "Force Stage All" Button
-            Button(action: {
-                gitService.forceStageAllFiles()
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "plus.square.on.square.fill")
-                        .font(.system(size: 10))
-                    Text("Stage All")
-                        .font(.system(size: 11, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(t.accent)
-                .cornerRadius(6)
-            }
-            .buttonStyle(.plain)
-            .help("Force stage all modified and untracked files in this workspace.")
-
-            // Stash Menu Button
-            Menu {
-                Button(action: { gitService.stashChanges() }) {
-                    Label("Stash Working Tree", systemImage: "tray.and.arrow.down")
-                }
-                Button(action: { gitService.popStash() }) {
-                    Label("Pop Latest Stash (\(gitService.stashCount))", systemImage: "tray.and.arrow.up")
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "tray").font(.system(size: 10))
-                    Text("Stash")
-                        .font(.system(size: 11, weight: .medium))
-                    if gitService.stashCount > 0 {
-                        Text("\(gitService.stashCount)")
-                            .font(.system(size: 9, weight: .bold))
-                            .padding(.horizontal, 4).padding(.vertical, 1)
-                            .background(t.accent)
-                            .foregroundColor(.white)
-                            .clipShape(Circle())
-                    }
-                }
-                .foregroundColor(t.textSecondary)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(Color.white.opacity(0.06))
-                .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(t.border, lineWidth: 1))
-            }
-            .menuStyle(.borderlessButton).fixedSize()
-
             // Branch menu
             Menu {
                 Section("Branches") {
@@ -284,16 +208,67 @@ struct MainFeedView: View {
             }
             .menuStyle(.borderlessButton).fixedSize()
 
-            // GitHub Remote Button
-            Button(action: {
-                let urlStr = gitService.activeStatus.remoteUrl.isEmpty ? (gitService.activeWorkspace?.remoteUrl ?? "") : gitService.activeStatus.remoteUrl
-                if !urlStr.isEmpty, let url = URL(string: urlStr.replacingOccurrences(of: "git@github.com:", with: "https://github.com/").replacingOccurrences(of: ".git", with: "")) {
-                    NSWorkspace.shared.open(url)
+            // Consolidated Options & Tools Menu
+            Menu {
+                Section("Workspace Tools") {
+                    Button(action: { gitService.forceStageAllFiles() }) {
+                        Label("Stage All Workspace Files", systemImage: "plus.square.on.square")
+                    }
+                    Button(action: {
+                        gitService.onlyChangesFromNow.toggle()
+                        if gitService.onlyChangesFromNow {
+                            gitService.resetBaselineForCurrentWorkspace()
+                        } else {
+                            gitService.refreshActiveStatus()
+                        }
+                    }) {
+                        Label(gitService.onlyChangesFromNow ? "Filter: Changes from Now (Active)" : "Filter: Track All Files",
+                              systemImage: gitService.onlyChangesFromNow ? "clock.badge.checkmark" : "clock")
+                    }
                 }
-            }) {
+
+                Section("Git Operations") {
+                    Button(action: { gitService.stashChanges() }) {
+                        Label("Stash Working Tree", systemImage: "tray.and.arrow.down")
+                    }
+                    Button(action: { gitService.popStash() }) {
+                        Label("Pop Latest Stash (\(gitService.stashCount))", systemImage: "tray.and.arrow.up")
+                    }
+                    Button(action: {
+                        let urlStr = gitService.activeStatus.remoteUrl.isEmpty ? (gitService.activeWorkspace?.remoteUrl ?? "") : gitService.activeStatus.remoteUrl
+                        if !urlStr.isEmpty, let url = URL(string: urlStr.replacingOccurrences(of: "git@github.com:", with: "https://github.com/").replacingOccurrences(of: ".git", with: "")) {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }) {
+                        Label("Open Remote on GitHub", systemImage: "safari")
+                    }
+                }
+
+                Section("Drawers & Viewers") {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            gitService.showDiffViewer.toggle()
+                            if gitService.showDiffViewer { gitService.fetchDiff() }
+                        }
+                    }) {
+                        Label(gitService.showDiffViewer ? "Hide Code Diff Drawer" : "Show Code Diff Drawer",
+                              systemImage: "doc.text.magnifyingglass")
+                    }
+
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            gitService.showTerminalConsole.toggle()
+                        }
+                    }) {
+                        Label(gitService.showTerminalConsole ? "Hide Debug Console" : "Show Debug Console",
+                              systemImage: "terminal")
+                    }
+                }
+            } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "safari").font(.system(size: 10))
-                    Text("GitHub").font(.system(size: 11, weight: .medium))
+                    Image(systemName: "ellipsis.circle").font(.system(size: 12))
+                    Text("Options").font(.system(size: 11, weight: .medium))
+                    Image(systemName: "chevron.down").font(.system(size: 8))
                 }
                 .foregroundColor(t.textSecondary)
                 .padding(.horizontal, 9)
@@ -302,49 +277,7 @@ struct MainFeedView: View {
                 .cornerRadius(6)
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(t.border, lineWidth: 1))
             }
-            .buttonStyle(.plain)
-            .help("Open remote repository on GitHub")
-
-            // Diff toggle
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    gitService.showDiffViewer.toggle()
-                    if gitService.showDiffViewer { gitService.fetchDiff() }
-                }
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "doc.text.magnifyingglass").font(.system(size: 10))
-                    Text("Diff").font(.system(size: 11, weight: .medium))
-                }
-                .foregroundColor(gitService.showDiffViewer ? t.accent : t.textSecondary)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(gitService.showDiffViewer ? t.accentMuted : Color.white.opacity(0.06))
-                .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(
-                    gitService.showDiffViewer ? t.accent.opacity(0.4) : t.border, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-
-            // Debug Logs toggle
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    gitService.showTerminalConsole.toggle()
-                }
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "terminal").font(.system(size: 10))
-                    Text("Debug Logs").font(.system(size: 11, weight: .medium))
-                }
-                .foregroundColor(gitService.showTerminalConsole ? t.accent : t.textSecondary)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(gitService.showTerminalConsole ? t.accentMuted : Color.white.opacity(0.06))
-                .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(
-                    gitService.showTerminalConsole ? t.accent.opacity(0.4) : t.border, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
+            .menuStyle(.borderlessButton).fixedSize()
 
             // Primary action button (T3 "Push & create PR" style)
             if let label = toolbarActionLabel, let action = toolbarAction {

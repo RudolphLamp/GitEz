@@ -178,15 +178,9 @@ private struct WorkspaceRow: View {
             gitService.refreshActiveStatus()
         }) {
             HStack(spacing: 0) {
-                // Accent bar
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(isSelected ? t.accent : Color.clear)
-                    .frame(width: 2)
-                    .padding(.vertical, 6)
-
                 VStack(alignment: .leading, spacing: 2) {
                     Text(workspace.name)
-                        .font(.system(size: 13, weight: isSelected ? .medium : .regular))
+                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                         .foregroundColor(isSelected ? t.textPrimary : t.textSecondary)
                         .lineLimit(1)
                     HStack(spacing: 3) {
@@ -194,9 +188,9 @@ private struct WorkspaceRow: View {
                         Text(workspace.selectedBranch.isEmpty ? "main" : workspace.selectedBranch)
                             .font(.system(size: 10, design: .monospaced))
                     }
-                    .foregroundColor(isSelected ? t.accent.opacity(0.8) : t.textTertiary)
+                    .foregroundColor(isSelected ? t.accent : t.textTertiary)
                 }
-                .padding(.leading, 10)
+                .padding(.horizontal, 10)
                 .padding(.vertical, 7)
 
                 Spacer()
